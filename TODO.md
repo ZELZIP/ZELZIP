@@ -6,6 +6,3 @@
     - Nix devShell
 - Add license
   - `addlicense`?
-- Check/Fix
-  - Toml
-  - Rust

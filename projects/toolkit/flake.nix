@@ -35,7 +35,7 @@
           paths = map (name: (makeScript {
             inherit pkgs;
             inherit name;
-          })) ["todo" "fix" "check"];
+          })) ["todo" "fix" "check" "test"];
         };
       };
     });

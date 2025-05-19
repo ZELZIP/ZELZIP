@@ -2,15 +2,11 @@
   description = "GOTRE's monorepo for packages and services";
 
   inputs = {
-    # TODO(TRACK: https://github.com/NixOS/nix/issues/10683):
-    #   Use `shallow=1` and `git+https` to avoid insane slow download times
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
 
     flake-parts.url = "github:hercules-ci/flake-parts";
-    flake-parts.inputs.nixpkgs.follows = "nixpkgs";
 
     mozilla.url = "github:mozilla/nixpkgs-mozilla/master";
-    mozilla.inputs.nixpkgs.follows = "nixpkgs";
 
     toolkit.url = ./projects/toolkit;
     toolkit.inputs.nixpkgs.follows = "nixpkgs";
@@ -28,7 +24,7 @@
         system,
         ...
       }: {
-	# Modify `pkgs` to add overlays
+        # Modify `pkgs` to add overlays
         _module.args.pkgs = import inputs.nixpkgs {
           inherit system;
           overlays = [
@@ -55,8 +51,8 @@
             ## TOML
             taplo
 
-	    ## Rust
-	    (pkgs.rustChannelOf { rustToolchain = ./rust-toolchain.toml; }).rust
+            ## Rust
+            (pkgs.rustChannelOf {rustToolchain = ./rust-toolchain.toml;}).rust
 
             ## Shared (YAML, TS, JS, HTML, CSS, JSON, Markdown)
             nodePackages.prettier

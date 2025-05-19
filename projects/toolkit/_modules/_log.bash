@@ -7,3 +7,7 @@ function gotre::log::_log {
 function gotre::log::info {
   gotre::log::_log info "$@"
 }
+
+function gotre::log::error {
+  gotre::log::_log error "$@"
+}

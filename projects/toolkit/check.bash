@@ -20,7 +20,16 @@ nix flake check ./projects/toolkit --all-systems
 gotre::log::info "Checking Nix files formatting"
 alejandra . --check
 
-gotre::log::info "Checking YAML, TS, JS, HTML, CSS, JSON and Markdown"
+gotre::log::info "Checking YAML, TS, JS, HTML, CSS, JSON and Markdown files"
 prettier . --check
+
+gotre::log::info "Checking TOML files"
+taplo format --check
+
+gotre::log::info "Checking Rust files sematics"
+cargo clippy
+
+gotre::log::info "Checking Rust files formatting"
+cargo fmt --check
 
 gotre::log::info "Everything is right!"

@@ -20,4 +20,13 @@ alejandra .
 gotre::log::info "Fixing YAML, TS, JS, HTML, CSS, JSON and Markdown"
 prettier . --write
 
+gotre::log::info "Fixing TOML files"
+taplo format
+
+gotre::log::info "Fixing Rust files sematics"
+cargo clippy --fix --allow-dirty
+
+gotre::log::info "Fixing Rust files formatting"
+cargo fmt
+
 gotre::log::info "Done!"
