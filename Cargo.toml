@@ -9,6 +9,8 @@ lto = true
 [workspace.dependencies]
 thiserror = "2.0.12"
 byteorder = "1.5.0"
+aes = "0.8.4"
+cbc = "0.1.2"
 
 [workspace.lints.rust]
 "missing_docs" = "warn"

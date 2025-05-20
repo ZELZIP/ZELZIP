@@ -10,3 +10,5 @@ path = "src/niiebla.rs"
 [dependencies]
 thiserror.workspace = true
 byteorder.workspace = true
+aes.workspace = true
+cbc.workspace = true

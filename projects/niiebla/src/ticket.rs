@@ -1,3 +1,5 @@
+use aes::cipher::{block_padding::NoPadding, BlockDecryptMut, BlockEncryptMut, KeyIvInit};
+use aes::Aes128;
 use byteorder::{BigEndian, ReadBytesExt};
 use std::io;
 use std::io::Read;
@@ -5,6 +7,8 @@ use std::io::Seek;
 use std::io::SeekFrom;
 use std::string::FromUtf8Error;
 use thiserror::Error;
+
+type Aes128CbcDec = cbc::Decryptor<aes::Aes128>;
 
 #[derive(Debug)]
 pub enum CommonKeyKind {
@@ -223,6 +227,27 @@ impl Ticket {
     }
 
     pub fn decrypt_title_key(&self) -> [u8; 16] {
-        [0; 16]
+        /*
+        let mut title_id = Vec::from([0; 8]);
+        title_id.extend(self.title_id);
+        */
+
+        // TODO(FIXME): Choose title or ticket IDs
+        let mut title_id = self.title_id.clone().to_vec();
+        for _ in 0..8 {
+            title_id.push(0);
+        }
+
+        let title_id: [u8; 16] = title_id.try_into().unwrap();
+
+        type Aes128CbcDec = cbc::Decryptor<aes::Aes128>;
+        let cipher = Aes128CbcDec::new(&self.common_key_kind.common_key().into(), &title_id.into());
+
+        let mut title_key = self.encrypted_title_key;
+        cipher
+            .decrypt_padded_mut::<NoPadding>(&mut title_key)
+            .unwrap();
+
+        title_key
     }
 }
