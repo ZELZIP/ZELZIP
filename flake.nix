@@ -6,7 +6,8 @@
 
     flake-parts.url = "github:hercules-ci/flake-parts";
 
-    mozilla.url = "github:mozilla/nixpkgs-mozilla/master";
+    fenix.url = "github:nix-community/fenix";
+    fenix.inputs.nixpkgs.follows = "nixpkgs";
 
     toolkit.url = ./projects/toolkit;
     toolkit.inputs.nixpkgs.follows = "nixpkgs";
@@ -28,7 +29,7 @@
         _module.args.pkgs = import inputs.nixpkgs {
           inherit system;
           overlays = [
-            inputs.mozilla.overlays.rust
+            inputs.fenix.overlays.default
           ];
           config = {};
         };
@@ -52,7 +53,7 @@
             taplo
 
             ## Rust
-            (pkgs.rustChannelOf {rustToolchain = ./rust-toolchain.toml;}).rust
+	    pkgs.fenix.stable.completeToolchain
 
             ## Shared (YAML, TS, JS, HTML, CSS, JSON, Markdown)
             nodePackages.prettier
