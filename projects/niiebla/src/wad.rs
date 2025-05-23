@@ -1,6 +1,7 @@
 pub mod installable;
 
 use crate::wad::installable::{InstallableWad, InstallableWadError};
+use serde::{Deserialize, Serialize};
 use std::io;
 use std::io::Read;
 use std::io::Seek;
@@ -8,10 +9,11 @@ use thiserror::Error;
 
 const INSTALLABLE_WAD_MAGIC_NUMBERS: [u8; 8] = [0x00, 0x00, 0x00, 0x20, 0x49, 0x73, 0x00, 0x00];
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum Wad {
-    Installable { installable: InstallableWad },
+    Installable(InstallableWad),
     // TODO(IMPLEMENT) Support for backup wads
+    BackUp,
 }
 
 #[derive(Error, Debug)]
@@ -31,13 +33,13 @@ impl Wad {
         let mut magic_numbers_buffer = [0; 8];
         buffer.read_exact(&mut magic_numbers_buffer)?;
 
-        // Keep the cursor in place for the read file parsing
+        // Keep the cursor in the correct place for the file parsing
         buffer.rewind()?;
 
         match magic_numbers_buffer {
-            INSTALLABLE_WAD_MAGIC_NUMBERS => Ok(Wad::Installable {
-                installable: unsafe { InstallableWad::from_reader(buffer)? },
-            }),
+            INSTALLABLE_WAD_MAGIC_NUMBERS => Ok(Wad::Installable(unsafe {
+                InstallableWad::from_reader(buffer)?
+            })),
 
             _ => Err(WadError::UnknownWadFormatError),
         }

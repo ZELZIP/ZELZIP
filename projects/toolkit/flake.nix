@@ -14,7 +14,7 @@
         name,
       }:
         pkgs.writeShellScriptBin
-        "gotre::${name}"
+        "_${name}"
         (
           builtins.readFile ./_setup.bash
           + pkgs.lib.concatStrings (

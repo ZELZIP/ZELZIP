@@ -1,28 +1,12 @@
 use crate::ticket::{Ticket, TicketError};
+use crate::certificate_chain::{CertificateChain, CertificateChainError};
 use byteorder::{BigEndian, ReadBytesExt};
 use std::io;
 use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
-
-#[derive(Debug)]
-pub enum InstallableWadType {
-    Normal,
-    Boot2,
-}
-
-#[derive(Debug)]
-pub struct InstallableWad {
-    pub header_size: u32,
-    pub r#type: InstallableWadType,
-    pub version: u16,
-    pub certificate_chain_size: u32,
-    pub ticket_size: u32,
-    pub title_metadata_size: u32,
-    pub content_size: u32,
-    pub footer_size: u32,
-}
 
 #[derive(Error, Debug)]
 pub enum InstallableWadError {
@@ -31,6 +15,40 @@ pub enum InstallableWadError {
 
     #[error("Unknown installable wad type: {0:?}")]
     UnknownInstallableWadTypeError([u8; 2]),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum InstallableWadKind {
+    Normal,
+    Boot2,
+}
+
+impl InstallableWadKind {
+    fn from_bytes(bytes: [u8; 2]) -> Result<InstallableWadKind, InstallableWadError> {
+        Ok(match &bytes {
+            b"Is" => InstallableWadKind::Normal,
+
+            b"ib" => InstallableWadKind::Boot2,
+
+            _ => {
+                return Err(InstallableWadError::UnknownInstallableWadTypeError(
+                    bytes,
+                ))
+            }
+        })
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct InstallableWad {
+    pub header_size: u32,
+    pub kind: InstallableWadKind,
+    pub version: u16,
+    pub certificate_chain_size: u32,
+    pub ticket_size: u32,
+    pub title_metadata_size: u32,
+    pub content_size: u32,
+    pub footer_size: u32,
 }
 
 impl InstallableWad {
@@ -47,20 +65,9 @@ impl InstallableWad {
     ) -> Result<InstallableWad, InstallableWadError> {
         let header_size = buffer.read_u32::<BigEndian>()?;
 
-        let mut wad_type_bytes = [0; 2];
-        buffer.read_exact(&mut wad_type_bytes)?;
-
-        let wad_type = match &wad_type_bytes {
-            b"Is" => InstallableWadType::Normal,
-
-            b"ib" => InstallableWadType::Boot2,
-
-            _ => {
-                return Err(InstallableWadError::UnknownInstallableWadTypeError(
-                    wad_type_bytes,
-                ))
-            }
-        };
+        let mut kind_bytes = [0; 2];
+        buffer.read_exact(&mut kind_bytes)?;
+        let kind = InstallableWadKind::from_bytes(kind_bytes)?;
 
         let version = buffer.read_u16::<BigEndian>()?;
         let certificate_chain_size = buffer.read_u32::<BigEndian>()?;
@@ -75,7 +82,7 @@ impl InstallableWad {
 
         Ok(InstallableWad {
             header_size,
-            r#type: wad_type,
+            kind,
             version,
             certificate_chain_size,
             ticket_size,
@@ -83,6 +90,12 @@ impl InstallableWad {
             content_size,
             footer_size,
         })
+    }
+
+    pub fn certificate_chain<T: Read + Seek>(&self, reader: &mut T) -> Result<CertificateChain, CertificateChainError> {
+        reader.seek(SeekFrom::Start(InstallableWad::HEADER_SIZE))?;
+
+        Ok(unsafe { CertificateChain::from_reader(reader)?})
     }
 
     pub fn ticket<T: Read + Seek>(

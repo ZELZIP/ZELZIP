@@ -1,3 +1,5 @@
+pub mod certificate_chain;
+pub mod common_key;
 pub mod ticket;
 pub mod wad;
 

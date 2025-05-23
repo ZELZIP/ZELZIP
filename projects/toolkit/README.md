@@ -4,7 +4,7 @@
 
 ## Usage
 
-Add the [local flake](./flake.nix) to the inputs of your flake and use the `default` package as desired.
+Add the [local flake](./flake.nix) to the inputs of your flake and use the `default` package as desired. Then you'll have available a set of commands prefixed with and underscode (`_`), e.g. `_run`.
 
 ### Example
 
