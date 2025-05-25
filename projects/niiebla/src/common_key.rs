@@ -15,15 +15,13 @@ pub enum CommonKeyKindError {
 }
 
 impl CommonKeyKind {
-    pub const fn from_index(index: u8) -> Result<CommonKeyKind, CommonKeyKindError> {
-        Ok(match index {
+    pub const fn from_identifier(identifier: u8) -> Result<CommonKeyKind, CommonKeyKindError> {
+        Ok(match identifier {
             0 => CommonKeyKind::Normal,
             1 => CommonKeyKind::Korean,
             2 => CommonKeyKind::WiiU,
 
-            common_key_value => {
-                return Err(CommonKeyKindError::UnknownCommonKeyIndex(common_key_value))
-            }
+            identifier => return Err(CommonKeyKindError::UnknownCommonKeyIndex(identifier)),
         })
     }
 

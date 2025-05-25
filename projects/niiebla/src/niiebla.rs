@@ -1,11 +1,13 @@
+pub mod aes;
 pub mod certificate_chain;
 pub mod common_key;
+pub mod signed_blob_header;
 pub mod ticket;
+pub mod title_metadata;
 pub mod wad;
-
 use std::string::FromUtf8Error;
 
-pub(crate) fn align_offset(value: u64, boundary: u64) -> u64 {
+pub(crate) fn align_to_boundary(value: u64, boundary: u64) -> u64 {
     value + (boundary - (value % boundary)) % boundary
 }
 

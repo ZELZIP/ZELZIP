@@ -1,14 +1,12 @@
-use crate::certificate_chain::{CertificateChain, CertificateChainError};
+use crate::aes::Aes128CbcDec;
 use crate::common_key::{CommonKeyKind, CommonKeyKindError};
+use crate::signed_blob_header::{SignedBlobHeader, SignedBlobHeaderError};
 use aes::cipher::{block_padding::NoPadding, BlockDecryptMut, KeyIvInit};
 use byteorder::{BigEndian, ReadBytesExt};
 use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
-use serde_with::Bytes;
 use std::io;
 use std::io::Read;
 use std::io::Seek;
-use std::io::SeekFrom;
 use std::string::FromUtf8Error;
 use thiserror::Error;
 
@@ -16,9 +14,6 @@ use thiserror::Error;
 pub enum TicketError {
     #[error("An IO error has occurred: {0}")]
     IoError(#[from] io::Error),
-
-    #[error("Unknown signature kind: {0:#X}")]
-    UnknownSignatureKind(u32),
 
     #[error("Converting into UTF-8 failed: {0}")]
     FromUtf8Error(#[from] FromUtf8Error),
@@ -37,23 +32,9 @@ pub enum TicketError {
 
     #[error("Unknown limit entry type: {0:#X}")]
     UnknownLimitEntryType(u32),
-}
 
-#[derive(Serialize, Deserialize, Debug)]
-pub enum TicketSignatureKind {
-    Rsa2048,
-}
-
-impl TicketSignatureKind {
-    fn from_identifier(identifier: u32) -> Result<TicketSignatureKind, TicketError> {
-        const SIGNATURE_KIND_IDENTIFIER_RSA_2048: u32 = 0x10001;
-
-        Ok(match identifier {
-            SIGNATURE_KIND_IDENTIFIER_RSA_2048 => TicketSignatureKind::Rsa2048,
-
-            bytes => return Err(TicketError::UnknownSignatureKind(bytes)),
-        })
-    }
+    #[error("Unable to parse the signed blob header: {0}")]
+    SignedBlobHeaderError(#[from] SignedBlobHeaderError),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -98,22 +79,18 @@ impl TicketLimitEntry {
     }
 }
 
-#[serde_as]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug)]
 pub struct Ticket {
-    pub signature_kind: TicketSignatureKind,
-
-    #[serde_as(as = "Bytes")]
-    pub signature: [u8; 256],
+    pub signed_blob_header: SignedBlobHeader,
 
     pub signature_issuer: String,
-
-    #[serde_as(as = "Bytes")]
     pub ecdh_data: [u8; 60],
-
     pub ticket_version: TicketVersion,
     pub encrypted_title_key: [u8; 16],
+
+    // TODO(FIX ME): This is a u64
     pub ticket_id: [u8; 8],
+
     pub console_id: u32,
     pub title_id: [u8; 8],
     pub title_version: u16,
@@ -122,11 +99,11 @@ pub struct Ticket {
     pub is_title_export_allowed: bool,
     pub common_key_kind: CommonKeyKind,
 
-    #[serde_as(as = "Bytes")]
+    // TODO(IMPROVE): Represent this as a bitmask?
     pub content_access_permissions: [u8; 64],
 
     pub limit_entries: [TicketLimitEntry; 8],
-    // TODO(IMPLEMENT) Support for V1 tickets
+    // TODO(IMPLEMENT): Support for V1 tickets
 }
 
 impl Ticket {
@@ -138,13 +115,7 @@ impl Ticket {
     pub(crate) unsafe fn from_reader<T: Read + Seek>(
         reader: &mut T,
     ) -> Result<Ticket, TicketError> {
-        let signature_kind = TicketSignatureKind::from_identifier(reader.read_u32::<BigEndian>()?)?;
-
-        let mut signature = [0; 256];
-        reader.read_exact(&mut signature)?;
-
-        // Skip padding of 60 bytes
-        reader.seek(SeekFrom::Current(60))?;
+        let signed_blob_header = SignedBlobHeader::from_reader(reader)?;
 
         let mut signature_issuer_bytes = [0; 64];
         reader.read_exact(&mut signature_issuer_bytes)?;
@@ -157,13 +128,13 @@ impl Ticket {
         let ticket_version = TicketVersion::from_number(reader.read_u8()?)?;
 
         // Skip 2 reserved bytes
-        reader.seek(SeekFrom::Current(2))?;
+        reader.seek_relative(2)?;
 
         let mut encrypted_title_key = [0; 16];
         reader.read_exact(&mut encrypted_title_key)?;
 
         // Skip 1 byte whose use is still unknown
-        reader.seek(SeekFrom::Current(1))?;
+        reader.seek_relative(1)?;
 
         let mut ticket_id = [0; 8];
         reader.read_exact(&mut ticket_id)?;
@@ -174,7 +145,7 @@ impl Ticket {
         reader.read_exact(&mut title_id)?;
 
         // Skip 2 byte whose use is still unknown
-        reader.seek(SeekFrom::Current(2))?;
+        reader.seek_relative(2)?;
 
         let title_version = reader.read_u16::<BigEndian>()?;
         let permitted_titles_mask = reader.read_u32::<BigEndian>()?;
@@ -188,16 +159,16 @@ impl Ticket {
             flag_value => return Err(TicketError::InvalidTitleExportFlag(flag_value)),
         };
 
-        let common_key_kind = CommonKeyKind::from_index(reader.read_u8()?)?;
+        let common_key_kind = CommonKeyKind::from_identifier(reader.read_u8()?)?;
 
         // Skip 48 byte whose use is still unknown
-        reader.seek(SeekFrom::Current(48))?;
+        reader.seek_relative(48)?;
 
         let mut content_access_permissions = [0; 64];
         reader.read_exact(&mut content_access_permissions)?;
 
         // Skip padding of 2 bytes
-        reader.seek(SeekFrom::Current(2))?;
+        reader.seek_relative(2)?;
 
         let mut limit_entries = [const { TicketLimitEntry::NoLimit }; 8];
         for limit_entry in &mut limit_entries {
@@ -210,8 +181,7 @@ impl Ticket {
         }
 
         Ok(Ticket {
-            signature_kind,
-            signature,
+            signed_blob_header,
             signature_issuer,
             ecdh_data,
             ticket_version,
@@ -241,7 +211,6 @@ impl Ticket {
             .try_into()
             .expect("Will never fail, the `id` slice has always a size of 8");
 
-        type Aes128CbcDec = cbc::Decryptor<aes::Aes128>;
         let cipher = Aes128CbcDec::new(&self.common_key_kind.bytes().into(), &iv.into());
 
         let mut title_key = self.encrypted_title_key;

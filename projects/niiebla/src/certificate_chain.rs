@@ -3,8 +3,23 @@ use std::io::{self, Read, Seek, SeekFrom};
 use std::string::FromUtf8Error;
 use thiserror::Error;
 
-// TODO(CLEAN UP): Signature and key are too complex and really similar (but maybe not enough?)
+fn seek_to_relative_boundary<T: Seek>(
+    seeker: &mut T,
+    absolute_start: u64,
+    boundary: u64,
+) -> Result<(), io::Error> {
+    let relative_position = seeker.stream_position()? - absolute_start;
 
+    seeker.seek(SeekFrom::Start(
+        absolute_start + crate::align_to_boundary(relative_position, boundary),
+    ))?;
+
+    Ok(())
+}
+
+// Boxing the values as Clippy suggest just makes everything harder
+// for little to none benefit
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, Copy)]
 pub enum CertificateSignature {
     Rsa4096([u8; 512]),
@@ -59,6 +74,9 @@ pub struct CertificateKey {
     pub value: CertificateKeyValue,
 }
 
+// Boxing the values as Clippy suggest just makes everything harder
+// for little to none benefit
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, Copy)]
 pub enum CertificateKeyValue {
     Rsa4096([u8; 512 + 4]),
@@ -108,10 +126,10 @@ impl CertificateKeyValue {
 
 #[derive(Debug, Clone)]
 pub struct Certificate {
-    signature: CertificateSignature,
-    issuer: String,
-    identity: String,
-    key: CertificateKey,
+    pub signature: CertificateSignature,
+    pub issuer: String,
+    pub identity: String,
+    pub key: CertificateKey,
 }
 
 impl Certificate {
@@ -123,12 +141,11 @@ impl Certificate {
     pub unsafe fn from_reader<T: Read + Seek>(
         reader: &mut T,
     ) -> Result<Certificate, CertificateChainError> {
+        let start_position = reader.stream_position()?;
         let signature = CertificateSignature::from_reader(reader)?;
 
         // Fix aligment after signature
-        // TODO(IMPROVE): Maybe this should be an extension method
-        let current_position = reader.stream_position()?;
-        reader.seek(SeekFrom::Start(crate::align_offset(current_position, 0x40)))?;
+        seek_to_relative_boundary(reader, start_position, 0x40)?;
 
         let mut issuer_bytes = [0; 64];
         reader.read_exact(&mut issuer_bytes)?;
@@ -168,7 +185,7 @@ impl Certificate {
 
 #[derive(Debug)]
 pub struct CertificateChain {
-    certificates: [Certificate; 3],
+    pub certificates: Vec<Certificate>,
 }
 
 #[derive(Error, Debug)]
@@ -192,26 +209,18 @@ impl CertificateChain {
     /// # Safety
     /// The given buffer is assumed to be from a certificate chain,
     /// the current position of the Seek pointer is taken as the start.
+    /// The given number of certificates is trusted to be right.
     pub unsafe fn from_reader<T: Read + Seek>(
-        certificate_chain_size: u32,
         reader: &mut T,
+        number_of_certificates: usize,
     ) -> Result<CertificateChain, CertificateChainError> {
-        // TODO(TRACK: https://github.com/rust-lang/rust/issues/89379): `try_array_from_fn` should
-        // make things easier in the future, will also be useful in the `limit_entries` inside a
-        // `Ticket`
+        let start_position = reader.stream_position()?;
+        let mut certificates = Vec::new();
 
-        // `[value; size]` synxtax only works with `Copy` compatible types
-        let mut certificates = [
-            Certificate::new_dummy(),
-            Certificate::new_dummy(),
-            Certificate::new_dummy(),
-        ];
+        for _ in 0..number_of_certificates {
+            certificates.push(Certificate::from_reader(reader)?);
 
-        for certificate in &mut certificates {
-            *certificate = Certificate::from_reader(reader)?;
-
-            let current_position = reader.stream_position()?;
-            reader.seek(SeekFrom::Start(crate::align_offset(current_position, 0x40)))?;
+            seek_to_relative_boundary(reader, start_position, 0x40)?;
         }
 
         Ok(CertificateChain { certificates })
