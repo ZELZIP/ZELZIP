@@ -53,7 +53,7 @@
             taplo
 
             ## Rust
-	    pkgs.fenix.stable.completeToolchain
+            pkgs.fenix.stable.completeToolchain
 
             ## Shared (YAML, TS, JS, HTML, CSS, JSON, Markdown)
             nodePackages.prettier

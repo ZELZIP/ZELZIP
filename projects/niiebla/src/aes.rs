@@ -1,7 +1,6 @@
-use aes::cipher::{block_padding::NoPadding, BlockDecryptMut, KeyIvInit};
+use aes::cipher::{block_padding::NoPadding, BlockDecryptMut};
 use std::io;
 use std::io::{Read, Seek, SeekFrom, Take};
-use std::string::FromUtf8Error;
 
 pub type Aes128CbcDec = cbc::Decryptor<aes::Aes128>;
 

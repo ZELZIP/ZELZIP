@@ -1,11 +1,6 @@
-use crate::aes::Aes128CbcDec;
-use crate::common_key::{CommonKeyKind, CommonKeyKindError};
 use crate::signed_blob_header::{SignedBlobHeader, SignedBlobHeaderError};
-use aes::cipher::{block_padding::NoPadding, BlockDecryptMut, KeyIvInit};
+use crate::title_id::TitleId;
 use byteorder::{BigEndian, ReadBytesExt};
-use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
-use serde_with::Bytes;
 use std::io;
 use std::io::Read;
 use std::io::Seek;
@@ -114,10 +109,11 @@ pub struct TitleMetadata {
 
     pub is_vwii_only: bool,
 
-    // TODO(IMPROVE): This may also be a title id but for the IOS
-    pub system_version: [u8; 8],
+    /// Nothing if the title is an IOS, if not here it'll stored either the title ID of the IOS
+    /// needed to run the title or the title ID of the boot2 version stored
+    pub ios_or_boot2_title_id: Option<TitleId>,
 
-    pub title_id: [u8; 8],
+    pub title_id: TitleId,
 
     pub platform_kind: TitleMetadataPlatformKind,
     pub group_id: u16,
@@ -192,11 +188,15 @@ impl TitleMetadata {
             value => return Err(TitleMetadataError::InvalidIsVWiiValue(value)),
         };
 
-        let mut system_version = [0; 8];
-        reader.read_exact(&mut system_version)?;
+        let ios_or_boot2_title_id_bytes = reader.read_u64::<BigEndian>()?;
 
-        let mut title_id = [0; 8];
-        reader.read_exact(&mut title_id)?;
+        let ios_or_boot2_title_id = if ios_or_boot2_title_id_bytes != 0 {
+            Some(TitleId::new(ios_or_boot2_title_id_bytes))
+        } else {
+            None
+        };
+
+        let title_id = TitleId::new(reader.read_u64::<BigEndian>()?);
 
         let platform_kind =
             TitleMetadataPlatformKind::from_identifier(reader.read_u32::<BigEndian>()?)?;
@@ -247,7 +247,7 @@ impl TitleMetadata {
             certificate_authority_certificate_revocation_list_version,
             signer_certificate_revocation_list_version,
             is_vwii_only,
-            system_version,
+            ios_or_boot2_title_id,
             title_id,
             platform_kind,
             group_id,

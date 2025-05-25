@@ -1,7 +1,6 @@
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug)]
 pub enum CommonKeyKind {
     Normal,
     Korean,

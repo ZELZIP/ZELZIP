@@ -1,12 +1,14 @@
 use crate::aes::Aes128CbcDec;
 use crate::common_key::{CommonKeyKind, CommonKeyKindError};
 use crate::signed_blob_header::{SignedBlobHeader, SignedBlobHeaderError};
+use crate::title_id::TitleId;
+use crate::Dump;
+use crate::WriteEx;
 use aes::cipher::{block_padding::NoPadding, BlockDecryptMut, KeyIvInit};
 use byteorder::{BigEndian, ReadBytesExt};
-use serde::{Deserialize, Serialize};
 use std::io;
 use std::io::Read;
-use std::io::Seek;
+use std::io::{Seek, Write};
 use std::string::FromUtf8Error;
 use thiserror::Error;
 
@@ -37,7 +39,7 @@ pub enum TicketError {
     SignedBlobHeaderError(#[from] SignedBlobHeaderError),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug)]
 pub enum TicketVersion {
     Version0,
     Version1,
@@ -54,7 +56,7 @@ impl TicketVersion {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug)]
 pub enum TicketLimitEntry {
     NoLimit,
     TimeLimit { minutes: u32 },
@@ -88,11 +90,10 @@ pub struct Ticket {
     pub ticket_version: TicketVersion,
     pub encrypted_title_key: [u8; 16],
 
-    // TODO(FIX ME): This is a u64
-    pub ticket_id: [u8; 8],
+    pub ticket_id: u64,
 
     pub console_id: u32,
-    pub title_id: [u8; 8],
+    pub title_id: TitleId,
     pub title_version: u16,
     pub permitted_titles_mask: u32,
     pub permit_mask: u32,
@@ -136,13 +137,11 @@ impl Ticket {
         // Skip 1 byte whose use is still unknown
         reader.seek_relative(1)?;
 
-        let mut ticket_id = [0; 8];
-        reader.read_exact(&mut ticket_id)?;
+        let ticket_id = reader.read_u64::<BigEndian>()?;
 
         let console_id = reader.read_u32::<BigEndian>()?;
 
-        let mut title_id = [0; 8];
-        reader.read_exact(&mut title_id)?;
+        let title_id = TitleId::new(reader.read_u64::<BigEndian>()?);
 
         // Skip 2 byte whose use is still unknown
         reader.seek_relative(2)?;
@@ -203,10 +202,10 @@ impl Ticket {
         let id = if self.console_id != 0 {
             self.ticket_id
         } else {
-            self.title_id
+            self.title_id.get()
         };
 
-        let iv: [u8; 16] = [id, [0; 8]]
+        let iv: [u8; 16] = [id.to_be_bytes(), [0; 8]]
             .concat()
             .try_into()
             .expect("Will never fail, the `id` slice has always a size of 8");
@@ -219,5 +218,15 @@ impl Ticket {
             .unwrap();
 
         title_key
+    }
+}
+
+impl Dump for Ticket {
+    fn dump<T: Write>(&self, writer: &mut T) -> io::Result<()> {
+        self.signed_blob_header.dump(writer)?;
+
+        // TODO: CONTINUE HERE
+
+        Ok(())
     }
 }

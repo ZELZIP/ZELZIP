@@ -1,7 +1,42 @@
-use byteorder::{BigEndian, ReadBytesExt};
+use crate::Dump;
+use crate::WriteEx;
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{self, Read, Seek};
 use std::string::FromUtf8Error;
 use thiserror::Error;
+
+#[derive(Debug)]
+pub enum SignedBlobHeaderSignatureKind {
+    Rsa2048,
+}
+
+impl SignedBlobHeaderSignatureKind {
+    const SIGNATURE_KIND_IDENTIFIER_RSA_2048: u32 = 0x10001;
+
+    fn from_identifier(
+        identifier: u32,
+    ) -> Result<SignedBlobHeaderSignatureKind, SignedBlobHeaderError> {
+        Ok(match identifier {
+            SignedBlobHeaderSignatureKind::SIGNATURE_KIND_IDENTIFIER_RSA_2048 => {
+                SignedBlobHeaderSignatureKind::Rsa2048
+            }
+
+            bytes => return Err(SignedBlobHeaderError::UnknownSignatureKind(bytes)),
+        })
+    }
+}
+
+impl Dump for SignedBlobHeaderSignatureKind {
+    fn dump<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
+        writer.write_u32::<BigEndian>(match self {
+            SignedBlobHeaderSignatureKind::Rsa2048 => {
+                SignedBlobHeaderSignatureKind::SIGNATURE_KIND_IDENTIFIER_RSA_2048
+            }
+        })?;
+
+        Ok(())
+    }
+}
 
 #[derive(Debug)]
 pub struct SignedBlobHeader {
@@ -46,21 +81,12 @@ impl SignedBlobHeader {
     }
 }
 
-#[derive(Debug)]
-pub enum SignedBlobHeaderSignatureKind {
-    Rsa2048,
-}
+impl Dump for SignedBlobHeader {
+    fn dump<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
+        self.signature_kind.dump(writer)?;
+        writer.write_all(&self.signature)?;
+        writer.write_zeroed(60)?;
 
-impl SignedBlobHeaderSignatureKind {
-    fn from_identifier(
-        identifier: u32,
-    ) -> Result<SignedBlobHeaderSignatureKind, SignedBlobHeaderError> {
-        const SIGNATURE_KIND_IDENTIFIER_RSA_2048: u32 = 0x10001;
-
-        Ok(match identifier {
-            SIGNATURE_KIND_IDENTIFIER_RSA_2048 => SignedBlobHeaderSignatureKind::Rsa2048,
-
-            bytes => return Err(SignedBlobHeaderError::UnknownSignatureKind(bytes)),
-        })
+        Ok(())
     }
 }

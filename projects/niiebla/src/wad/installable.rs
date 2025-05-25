@@ -1,17 +1,16 @@
-use crate::ticket::{Ticket, TicketError};
-use aes::cipher::{block_padding::NoPadding, BlockDecryptMut, KeyIvInit};
-use std::io::Take;
+use crate::aes::Aes128CbcDec;
+use crate::aes::AesCbcDecryptStream;
 use crate::certificate_chain::{CertificateChain, CertificateChainError};
+use crate::ticket::{Ticket, TicketError};
+use crate::title_metadata::{TitleMetadata, TitleMetadataError};
+use aes::cipher::KeyIvInit;
 use byteorder::{BigEndian, ReadBytesExt};
 use std::io;
 use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
-use serde::{Deserialize, Serialize};
+use std::io::Take;
 use thiserror::Error;
-use crate::title_metadata::{TitleMetadata, TitleMetadataError};
-use crate::aes::AesCbcDecryptStream;
-use crate::aes::Aes128CbcDec;
 
 #[derive(Error, Debug)]
 pub enum InstallableWadError {
@@ -28,10 +27,10 @@ pub enum InstallableWadError {
     TitleMetadataError(#[from] TitleMetadataError),
 
     #[error("The given content entry index doesn't exist: {0}")]
-    ContentEntryIndexDoesntExist(u16)
+    ContentEntryIndexDoesntExist(u16),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug)]
 pub enum InstallableWadKind {
     Normal,
     Boot2,
@@ -44,16 +43,12 @@ impl InstallableWadKind {
 
             b"ib" => InstallableWadKind::Boot2,
 
-            _ => {
-                return Err(InstallableWadError::UnknownInstallableWadTypeError(
-                    bytes,
-                ))
-            }
+            _ => return Err(InstallableWadError::UnknownInstallableWadTypeError(bytes)),
         })
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug)]
 pub struct InstallableWad {
     pub header_size: u32,
     pub kind: InstallableWadKind,
@@ -107,20 +102,24 @@ impl InstallableWad {
         })
     }
 
-    pub fn certificate_chain<T: Read + Seek>(&self, reader: &mut T) -> Result<CertificateChain, CertificateChainError> {
-        reader.seek(SeekFrom::Start(InstallableWad::HEADER_SIZE))?;
-
-        Ok(unsafe { CertificateChain::from_reader(reader, InstallableWad::NUMBER_OF_CERTIFICATES_STORED)?})
-    }
-
-    pub fn ticket<T: Read + Seek>(
+    pub fn certificate_chain<T: Read + Seek>(
         &self,
         reader: &mut T,
-    ) -> Result<Ticket, TicketError> {
-        let ticket_offset = 
-            // The header is always aligned to the boundary
-            InstallableWad::HEADER_SIZE
-            + crate::align_to_boundary(self.certificate_chain_size as u64, InstallableWad::SECTION_BOUNDARY);
+    ) -> Result<CertificateChain, CertificateChainError> {
+        reader.seek(SeekFrom::Start(InstallableWad::HEADER_SIZE))?;
+
+        Ok(unsafe {
+            CertificateChain::from_reader(reader, InstallableWad::NUMBER_OF_CERTIFICATES_STORED)?
+        })
+    }
+
+    pub fn ticket<T: Read + Seek>(&self, reader: &mut T) -> Result<Ticket, TicketError> {
+        // The header is always aligned to the boundary
+        let ticket_offset = InstallableWad::HEADER_SIZE
+            + crate::align_to_boundary(
+                self.certificate_chain_size as u64,
+                InstallableWad::SECTION_BOUNDARY,
+            );
 
         reader.seek(SeekFrom::Start(ticket_offset))?;
 
@@ -131,24 +130,35 @@ impl InstallableWad {
         &self,
         reader: &mut T,
     ) -> Result<TitleMetadata, TitleMetadataError> {
-        let ticket_offset = 
-            // The header is always aligned to the boundary
-            InstallableWad::HEADER_SIZE
-            + crate::align_to_boundary(self.certificate_chain_size as u64, InstallableWad::SECTION_BOUNDARY)
+        // The header is always aligned to the boundary
+        let title_metadata_offset = InstallableWad::HEADER_SIZE
+            + crate::align_to_boundary(
+                self.certificate_chain_size as u64,
+                InstallableWad::SECTION_BOUNDARY,
+            )
             + crate::align_to_boundary(self.ticket_size as u64, InstallableWad::SECTION_BOUNDARY);
 
-        reader.seek(SeekFrom::Start(ticket_offset))?;
+        reader.seek(SeekFrom::Start(title_metadata_offset))?;
 
         Ok(unsafe { TitleMetadata::from_reader(reader)? })
     }
-    
-    pub fn take_encrypted_content<T: Read + Seek>(&self, mut reader: T, content_index: u16) -> Result<Take<T>, InstallableWadError> {
-        let mut content_offset = 
-            // The header is always aligned to the boundary
-            InstallableWad::HEADER_SIZE
-            + crate::align_to_boundary(self.certificate_chain_size as u64, InstallableWad::SECTION_BOUNDARY)
+
+    pub fn take_encrypted_content<T: Read + Seek>(
+        &self,
+        mut reader: T,
+        content_index: u16,
+    ) -> Result<Take<T>, InstallableWadError> {
+        // The header is always aligned to the boundary
+        let mut content_offset = InstallableWad::HEADER_SIZE
+            + crate::align_to_boundary(
+                self.certificate_chain_size as u64,
+                InstallableWad::SECTION_BOUNDARY,
+            )
             + crate::align_to_boundary(self.ticket_size as u64, InstallableWad::SECTION_BOUNDARY)
-            + crate::align_to_boundary(self.title_metadata_size as u64, InstallableWad::SECTION_BOUNDARY);
+            + crate::align_to_boundary(
+                self.title_metadata_size as u64,
+                InstallableWad::SECTION_BOUNDARY,
+            );
 
         let title_metadata = self.title_metadata(&mut reader)?;
 
@@ -158,20 +168,28 @@ impl InstallableWad {
                 return Ok(reader.take(content_entry.size));
             }
 
-            content_offset += crate::align_to_boundary(content_entry.size, InstallableWad::SECTION_BOUNDARY);
+            content_offset +=
+                crate::align_to_boundary(content_entry.size, InstallableWad::SECTION_BOUNDARY);
         }
 
-        Err(InstallableWadError::ContentEntryIndexDoesntExist(content_index))
+        Err(InstallableWadError::ContentEntryIndexDoesntExist(
+            content_index,
+        ))
     }
 
-    pub fn take_decrypted_content<T: Read + Seek>(&self, mut reader: T, content_index: u16) -> Result<AesCbcDecryptStream<T>, InstallableWadError> {
+    pub fn take_decrypted_content<T: Read + Seek>(
+        &self,
+        mut reader: T,
+        content_index: u16,
+    ) -> Result<AesCbcDecryptStream<T>, InstallableWadError> {
         let title_key = self.ticket(&mut reader)?.decrypt_title_key();
         let content_take = self.take_encrypted_content(reader, content_index)?;
 
-        // Add 14 trailing zeroes to the IV
+        // Add 14 trailing zeroed bytes to the IV
         let mut iv = Vec::from(content_index.to_be_bytes());
         iv.append(&mut Vec::from([0; 14]));
-        let iv: [u8; 16] = iv.try_into()
+        let iv: [u8; 16] = iv
+            .try_into()
             .expect("Will never fail, the `content_index` is always 16 bits");
 
         let cipher = Aes128CbcDec::new(&title_key.into(), &iv.into());
