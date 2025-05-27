@@ -1,3 +1,7 @@
+use crate::WriteEx;
+use byteorder::WriteBytesExt;
+use std::io;
+use std::io::Write;
 use thiserror::Error;
 
 #[derive(Debug)]
@@ -22,6 +26,16 @@ impl CommonKeyKind {
 
             identifier => return Err(CommonKeyKindError::UnknownCommonKeyIndex(identifier)),
         })
+    }
+
+    pub fn dump_identifier<T: Write>(&self, writer: &mut T) -> io::Result<()> {
+        writer.write_u8(match self {
+            CommonKeyKind::Normal => 0,
+            CommonKeyKind::Korean => 1,
+            CommonKeyKind::WiiU => 2,
+        })?;
+
+        Ok(())
     }
 
     /// Get the bytes of the correct kind of common key.

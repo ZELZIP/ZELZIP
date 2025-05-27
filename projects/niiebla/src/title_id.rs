@@ -1,4 +1,7 @@
+use byteorder::{BigEndian, WriteBytesExt};
 use std::fmt::{self, Display};
+use std::io;
+use std::io::Write;
 
 #[derive(Debug)]
 pub struct TitleId(u64);
@@ -10,6 +13,12 @@ impl TitleId {
 
     pub fn get(&self) -> u64 {
         self.0
+    }
+
+    pub fn dump<T: Write>(&self, writer: &mut T) -> io::Result<()> {
+        writer.write_u64::<BigEndian>(self.0)?;
+
+        Ok(())
     }
 }
 

@@ -9,7 +9,7 @@ use std::io;
 use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
-use std::io::Take;
+use std::io::{Take, Write};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -113,7 +113,7 @@ impl InstallableWad {
         })
     }
 
-    pub fn ticket<T: Read + Seek>(&self, reader: &mut T) -> Result<Ticket, TicketError> {
+    pub fn seek_ticket<S: Seek>(&self, seeker: &mut S) -> Result<(), TicketError> {
         // The header is always aligned to the boundary
         let ticket_offset = InstallableWad::HEADER_SIZE
             + crate::align_to_boundary(
@@ -121,9 +121,26 @@ impl InstallableWad {
                 InstallableWad::SECTION_BOUNDARY,
             );
 
-        reader.seek(SeekFrom::Start(ticket_offset))?;
+        seeker.seek(SeekFrom::Start(ticket_offset))?;
+        Ok(())
+    }
 
+    pub fn ticket<T: Read + Seek>(&self, reader: &mut T) -> Result<Ticket, TicketError> {
+        self.seek_ticket(reader)?;
         Ok(unsafe { Ticket::from_reader(reader)? })
+    }
+
+    pub fn write_ticket<W: Write + Seek>(
+        &mut self,
+        new_ticket: &Ticket,
+        writer: &mut W,
+    ) -> Result<(), TicketError> {
+        self.seek_ticket(writer)?;
+
+        // TODO(IMPROVE): The size of a ticket should change if Ticket goes V1 <-> V2
+        new_ticket.dump(writer)?;
+
+        Ok(())
     }
 
     pub fn title_metadata<T: Read + Seek>(

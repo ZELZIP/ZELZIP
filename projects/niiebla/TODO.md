@@ -8,3 +8,4 @@
 - Integration with both text and binary RSA crate
 - When all is finished make a README.md
 - Add logging support (also tracing?)
+- Preserve if VC in Ticket

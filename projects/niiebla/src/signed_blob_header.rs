@@ -1,4 +1,3 @@
-use crate::Dump;
 use crate::WriteEx;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{self, Read, Seek};
@@ -24,9 +23,7 @@ impl SignedBlobHeaderSignatureKind {
             bytes => return Err(SignedBlobHeaderError::UnknownSignatureKind(bytes)),
         })
     }
-}
 
-impl Dump for SignedBlobHeaderSignatureKind {
     fn dump<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
         writer.write_u32::<BigEndian>(match self {
             SignedBlobHeaderSignatureKind::Rsa2048 => {
@@ -79,10 +76,8 @@ impl SignedBlobHeader {
             signature,
         })
     }
-}
 
-impl Dump for SignedBlobHeader {
-    fn dump<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
+    pub fn dump<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
         self.signature_kind.dump(writer)?;
         writer.write_all(&self.signature)?;
         writer.write_zeroed(60)?;

@@ -2,10 +2,9 @@ use crate::aes::Aes128CbcDec;
 use crate::common_key::{CommonKeyKind, CommonKeyKindError};
 use crate::signed_blob_header::{SignedBlobHeader, SignedBlobHeaderError};
 use crate::title_id::TitleId;
-use crate::Dump;
 use crate::WriteEx;
 use aes::cipher::{block_padding::NoPadding, BlockDecryptMut, KeyIvInit};
-use byteorder::{BigEndian, ReadBytesExt};
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io;
 use std::io::Read;
 use std::io::{Seek, Write};
@@ -37,12 +36,26 @@ pub enum TicketError {
 
     #[error("Unable to parse the signed blob header: {0}")]
     SignedBlobHeaderError(#[from] SignedBlobHeaderError),
+
+    #[error("Invalid is virtual console title flag value: {0:#X}")]
+    InvalidIsVirtualConsoleFlag(u8),
 }
 
 #[derive(Debug)]
 pub enum TicketVersion {
     Version0,
     Version1,
+}
+
+impl TicketVersion {
+    fn dump<T: Write>(&self, writer: &mut T) -> io::Result<()> {
+        writer.write_u8(match self {
+            TicketVersion::Version0 => 0,
+            TicketVersion::Version1 => 1,
+        })?;
+
+        Ok(())
+    }
 }
 
 impl TicketVersion {
@@ -58,7 +71,7 @@ impl TicketVersion {
 
 #[derive(Debug)]
 pub enum TicketLimitEntry {
-    NoLimit,
+    NoLimit { kind: u32 },
     TimeLimit { minutes: u32 },
     LaunchLimit { number_of_launches: u32 },
 }
@@ -66,7 +79,7 @@ pub enum TicketLimitEntry {
 impl TicketLimitEntry {
     fn new(kind: u32, associated_value: u32) -> Result<TicketLimitEntry, TicketError> {
         Ok(match kind {
-            0 | 3 => TicketLimitEntry::NoLimit,
+            0 | 3 => TicketLimitEntry::NoLimit { kind },
 
             1 => TicketLimitEntry::TimeLimit {
                 minutes: associated_value,
@@ -78,6 +91,26 @@ impl TicketLimitEntry {
 
             kind => return Err(TicketError::UnknownLimitEntryType(kind)),
         })
+    }
+
+    fn dump<T: Write>(&self, writer: &mut T) -> io::Result<()> {
+        // TODO(CLEAN UP): Is this redundant?
+        match self {
+            TicketLimitEntry::NoLimit { kind } => {
+                writer.write_u32::<BigEndian>(*kind)?;
+                writer.write_zeroed(4)?;
+            }
+            TicketLimitEntry::TimeLimit { minutes } => {
+                writer.write_u32::<BigEndian>(1)?;
+                writer.write_u32::<BigEndian>(*minutes)?;
+            }
+            TicketLimitEntry::LaunchLimit { number_of_launches } => {
+                writer.write_u32::<BigEndian>(4)?;
+                writer.write_u32::<BigEndian>(*number_of_launches)?;
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -99,6 +132,7 @@ pub struct Ticket {
     pub permit_mask: u32,
     pub is_title_export_allowed: bool,
     pub common_key_kind: CommonKeyKind,
+    pub is_virtual_console_title: bool,
 
     // TODO(IMPROVE): Represent this as a bitmask?
     pub content_access_permissions: [u8; 64],
@@ -150,9 +184,7 @@ impl Ticket {
         let permitted_titles_mask = reader.read_u32::<BigEndian>()?;
         let permit_mask = reader.read_u32::<BigEndian>()?;
 
-        let title_export_flag_bytes = reader.read_u8()?;
-
-        let is_title_export_allowed = match title_export_flag_bytes {
+        let is_title_export_allowed = match reader.read_u8()? {
             0 => false,
             1 => true,
             flag_value => return Err(TicketError::InvalidTitleExportFlag(flag_value)),
@@ -160,8 +192,14 @@ impl Ticket {
 
         let common_key_kind = CommonKeyKind::from_identifier(reader.read_u8()?)?;
 
-        // Skip 48 byte whose use is still unknown
-        reader.seek_relative(48)?;
+        // Skip 47 byte whose use is still unknown
+        reader.seek_relative(47)?;
+
+        let is_virtual_console_title = match reader.read_u8()? {
+            0 => false,
+            1 => true,
+            flag_value => return Err(TicketError::InvalidIsVirtualConsoleFlag(flag_value)),
+        };
 
         let mut content_access_permissions = [0; 64];
         reader.read_exact(&mut content_access_permissions)?;
@@ -169,7 +207,7 @@ impl Ticket {
         // Skip padding of 2 bytes
         reader.seek_relative(2)?;
 
-        let mut limit_entries = [const { TicketLimitEntry::NoLimit }; 8];
+        let mut limit_entries = [const { TicketLimitEntry::NoLimit { kind: 0 } }; 8];
         for limit_entry in &mut limit_entries {
             *limit_entry = TicketLimitEntry::new(
                 // Kind
@@ -193,6 +231,7 @@ impl Ticket {
             permit_mask,
             is_title_export_allowed,
             common_key_kind,
+            is_virtual_console_title,
             content_access_permissions,
             limit_entries,
         })
@@ -219,13 +258,47 @@ impl Ticket {
 
         title_key
     }
-}
 
-impl Dump for Ticket {
-    fn dump<T: Write>(&self, writer: &mut T) -> io::Result<()> {
+    pub fn dump<T: Write>(&self, writer: &mut T) -> io::Result<()> {
         self.signed_blob_header.dump(writer)?;
+        writer.write_as_c_string_padded(&self.signature_issuer, 64)?;
+        writer.write_all(&self.ecdh_data)?;
+        self.ticket_version.dump(writer)?;
 
-        // TODO: CONTINUE HERE
+        // Skip 2 reserved bytes
+        writer.write_zeroed(2)?;
+
+        writer.write_all(&self.encrypted_title_key)?;
+
+        // Skip 1 unknown byte
+        writer.write_zeroed(1)?;
+
+        writer.write_u64::<BigEndian>(self.ticket_id)?;
+        writer.write_u32::<BigEndian>(self.console_id)?;
+        self.title_id.dump(writer)?;
+
+        // Skip 2 unknown bytes
+        //writer.write_zeroed(2)?;
+        writer.write_all(&[0xFF, 0xFF])?;
+
+        writer.write_u16::<BigEndian>(self.title_version)?;
+        writer.write_u32::<BigEndian>(self.permitted_titles_mask)?;
+        writer.write_u32::<BigEndian>(self.permit_mask)?;
+        writer.write_bool(self.is_title_export_allowed)?;
+        self.common_key_kind.dump_identifier(writer)?;
+
+        // Skip 47 unknown bytes
+        writer.write_zeroed(47)?;
+
+        writer.write_bool(self.is_virtual_console_title)?;
+        writer.write_all(&self.content_access_permissions)?;
+
+        // Skip 2 bytes of padding
+        writer.write_zeroed(2)?;
+
+        for limit_entry in &self.limit_entries {
+            limit_entry.dump(writer)?;
+        }
 
         Ok(())
     }

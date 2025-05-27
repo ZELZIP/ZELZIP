@@ -50,7 +50,7 @@ impl Wad {
 
     /// Like [Self::from_reader] but treats any format of WAD except the Installable ones as an
     /// error.
-    pub fn try_installable<T: Read + Seek>(reader: &mut T) -> Result<InstallableWad, WadError> {
+    pub fn try_new_installable<T: Read + Seek>(reader: &mut T) -> Result<InstallableWad, WadError> {
         match Wad::from_reader(reader)? {
             Wad::Installable(installable_wad) => Ok(installable_wad),
 
