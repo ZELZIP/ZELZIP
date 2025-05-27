@@ -24,6 +24,7 @@ impl InstallableWad {
 
     pub fn ticket<T: Read + Seek>(&self, reader: &mut T) -> Result<Ticket, TicketError> {
         self.seek_ticket(reader)?;
+
         Ok(unsafe { Ticket::from_reader(reader)? })
     }
 

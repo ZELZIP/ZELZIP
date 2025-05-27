@@ -3,6 +3,8 @@ use crate::wad::installable::{InstallableWad, InstallableWadError};
 use aes::cipher::KeyIvInit;
 use std::io::{Read, Seek, SeekFrom, Take};
 
+// TODO: Put this like Ticket sub-impl
+
 impl InstallableWad {
     pub fn take_encrypted_content<T: Read + Seek>(
         &self,

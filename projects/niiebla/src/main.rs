@@ -9,16 +9,24 @@ fn main() {
     let mut wad_file = File::open(wad_path).unwrap();
     let wad = Wad::try_new_installable(&mut wad_file).unwrap();
 
-    let tmd_path = PathBuf::from("dirty/tmd.niiebla.bin");
-    let mut tmd_file = OpenOptions::new()
+    let cert_chain_path = PathBuf::from("dirty/cert-chain.niiebla.bin");
+    let mut cert_chain_file = OpenOptions::new()
         .create(true)
         .truncate(true)
         .write(true)
-        .open(tmd_path)
+        .open(cert_chain_path)
         .unwrap();
 
-    let title_metadata = wad.title_metadata(&mut wad_file).unwrap();
-    title_metadata.dump(&mut tmd_file).unwrap();
+    let cert_chain = wad.certificate_chain(&mut wad_file).unwrap();
+    cert_chain.dump(&mut cert_chain_file).unwrap();
+
+    /*
+    std::io::copy(
+        &mut wad.take_certificate_chain(&mut wad_file).unwrap(),
+        &mut cert_chain_file,
+    )
+    .unwrap();
+    */
 }
 
 /*

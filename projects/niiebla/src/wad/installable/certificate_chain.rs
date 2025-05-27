@@ -29,6 +29,8 @@ impl InstallableWad {
         reader: &mut T,
     ) -> Result<CertificateChain, CertificateChainError> {
         Ok(unsafe {
+            self.seek_certificate_chain(reader)?;
+
             CertificateChain::from_reader(reader, InstallableWad::NUMBER_OF_CERTIFICATES_STORED)?
         })
     }

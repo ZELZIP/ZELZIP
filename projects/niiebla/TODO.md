@@ -1,8 +1,9 @@
 # TODO (NiiEBLA)
 
-- Implement Dump for everything
+- Clean up
 - Newtype in title version
 - Change write_zeroed to plain seek_relative
+- InstallableWad level dump
 - RE the Ticket and TMD
 - Make another project for ViiENTO
 - Make Wii WAD Filesystem Representation (W2FSR)?
