@@ -29,7 +29,8 @@ impl Display for TitleId {
 
         if upper_half != 0x00000001 {
             let lower_half = lower_half.to_be_bytes().to_vec();
-            let lower_half = String::from_utf8(lower_half).unwrap();
+            let lower_half = String::from_utf8(lower_half)
+                .expect("Unable to convert the lower half of the title ID to UTF-8");
 
             return write!(f, "{:08X}-{}", upper_half, lower_half);
         }
@@ -42,7 +43,7 @@ impl Display for TitleId {
             0x00000101 => String::from("MIOS"),
 
             lower_half => {
-                format!("IOSv{} ", lower_half)
+                format!("IOSv{}", lower_half)
             }
         };
 

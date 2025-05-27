@@ -1,9 +1,11 @@
 use crate::signed_blob_header::{SignedBlobHeader, SignedBlobHeaderError};
 use crate::title_id::TitleId;
-use byteorder::{BigEndian, ReadBytesExt};
+use crate::WriteEx;
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io;
 use std::io::Read;
 use std::io::Seek;
+use std::io::Write;
 use std::string::FromUtf8Error;
 use thiserror::Error;
 
@@ -56,6 +58,22 @@ impl TitleMetadataContentEntry {
             hash,
         })
     }
+
+    fn dump<W: Write>(&self, writer: &mut W) -> io::Result<()> {
+        writer.write_u32::<BigEndian>(self.id)?;
+        writer.write_u16::<BigEndian>(self.index)?;
+
+        writer.write_u16::<BigEndian>(match &self.kind {
+            TitleMetadataContentEntryKind::Normal => 0x0001,
+            TitleMetadataContentEntryKind::Dlc => 0x4001,
+            TitleMetadataContentEntryKind::Shared => 0x8001,
+        })?;
+
+        writer.write_u64::<BigEndian>(self.size)?;
+        writer.write_all(&self.hash)?;
+
+        Ok(())
+    }
 }
 
 #[derive(Debug)]
@@ -71,6 +89,15 @@ impl TitleMetadataPlatformKind {
             0x00000001 => Ok(TitleMetadataPlatformKind::Wii),
             identifier => Err(TitleMetadataError::UnknownPlatformKind(identifier)),
         }
+    }
+
+    fn dump<W: Write>(&self, writer: &mut W) -> io::Result<()> {
+        writer.write_u32::<BigEndian>(match self {
+            TitleMetadataPlatformKind::IQueNetCard => 0,
+            TitleMetadataPlatformKind::Wii => 1,
+        })?;
+
+        Ok(())
     }
 }
 
@@ -95,6 +122,18 @@ impl TitleMetadataRegion {
             identifier => Err(TitleMetadataError::UnknownRegion(identifier)),
         }
     }
+
+    fn dump_identifier<W: Write>(&self, writer: &mut W) -> io::Result<()> {
+        writer.write_u16::<BigEndian>(match &self {
+            TitleMetadataRegion::Japan => 0,
+            TitleMetadataRegion::USA => 1,
+            TitleMetadataRegion::Europe => 2,
+            TitleMetadataRegion::RegionFree => 3,
+            TitleMetadataRegion::Korea => 4,
+        })?;
+
+        Ok(())
+    }
 }
 
 #[derive(Debug)]
@@ -102,7 +141,7 @@ pub struct TitleMetadata {
     pub signed_blob_header: SignedBlobHeader,
 
     pub signature_issuer: String,
-    pub version: u8,
+    pub tmd_version: u8,
 
     pub certificate_authority_certificate_revocation_list_version: u8,
     pub signer_certificate_revocation_list_version: u8,
@@ -177,7 +216,7 @@ impl TitleMetadata {
 
         let signature_issuer = crate::string_from_null_terminated_bytes(&signature_issuer_bytes)?;
 
-        let version = reader.read_u8()?;
+        let tmd_version = reader.read_u8()?;
         let certificate_authority_certificate_revocation_list_version = reader.read_u8()?;
         let signer_certificate_revocation_list_version = reader.read_u8()?;
 
@@ -243,7 +282,7 @@ impl TitleMetadata {
         Ok(TitleMetadata {
             signed_blob_header,
             signature_issuer,
-            version,
+            tmd_version,
             certificate_authority_certificate_revocation_list_version,
             signer_certificate_revocation_list_version,
             is_vwii_only,
@@ -261,5 +300,64 @@ impl TitleMetadata {
             boot_content_index,
             content_entries,
         })
+    }
+
+    pub fn dump<T: Write + Seek>(&self, writer: &mut T) -> io::Result<()> {
+        self.signed_blob_header.dump(writer)?;
+        writer.write_as_c_string_padded(&self.signature_issuer, 64)?;
+        writer.write_u8(self.tmd_version)?;
+        writer.write_u8(self.certificate_authority_certificate_revocation_list_version)?;
+        writer.write_u8(self.signer_certificate_revocation_list_version)?;
+        writer.write_bool(self.is_vwii_only)?;
+
+        match &self.ios_or_boot2_title_id {
+            None => writer.write_zeroed(1)?,
+            Some(title_id) => title_id.dump(writer)?,
+        };
+
+        self.title_id.dump(writer)?;
+        self.platform_kind.dump(writer)?;
+        writer.write_u16::<BigEndian>(self.group_id)?;
+
+        // Skip 2 always zeroed bytes
+        writer.write_zeroed(2)?;
+
+        self.region.dump_identifier(writer)?;
+        writer.write_all(&self.ratings)?;
+
+        // Skip 12 reserved bytes
+        writer.seek_relative(12)?;
+
+        writer.write_all(&self.ipc_mask)?;
+
+        // Skip 18 reserved bytes
+        writer.seek_relative(18)?;
+
+        // The first 3 bytes of the access rights were never used
+        writer.seek_relative(3)?;
+
+        let mut fouth_access_right_byte = 0;
+
+        if self.is_full_ppc_access_allowed {
+            fouth_access_right_byte |= 0b00000001;
+        }
+
+        if self.is_dvd_access_allowed {
+            fouth_access_right_byte |= 0b00000010;
+        }
+
+        writer.write_u8(fouth_access_right_byte)?;
+        writer.write_u16::<BigEndian>(self.title_version)?;
+        writer.write_u16::<BigEndian>(self.number_of_content_entries)?;
+        writer.write_u16::<BigEndian>(self.boot_content_index)?;
+
+        // Skip the title minor version as it was never used
+        writer.seek_relative(2)?;
+
+        for content_entry in &self.content_entries {
+            content_entry.dump(writer)?;
+        }
+
+        Ok(())
     }
 }

@@ -71,9 +71,17 @@ impl TicketVersion {
 
 #[derive(Debug)]
 pub enum TicketLimitEntry {
-    NoLimit { kind: u32 },
-    TimeLimit { minutes: u32 },
-    LaunchLimit { number_of_launches: u32 },
+    NoLimit {
+        /// The no limit entryhave been seen with multiple values (zero and three), to preserve
+        /// reproducibility it has to be stored. Probably you don't want to edit it.
+        kind: u32,
+    },
+    TimeLimit {
+        minutes: u32,
+    },
+    LaunchLimit {
+        number_of_launches: u32,
+    },
 }
 
 impl TicketLimitEntry {
@@ -94,7 +102,6 @@ impl TicketLimitEntry {
     }
 
     fn dump<T: Write>(&self, writer: &mut T) -> io::Result<()> {
-        // TODO(CLEAN UP): Is this redundant?
         match self {
             TicketLimitEntry::NoLimit { kind } => {
                 writer.write_u32::<BigEndian>(*kind)?;

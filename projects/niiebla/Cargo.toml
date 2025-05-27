@@ -12,3 +12,4 @@ thiserror.workspace = true
 byteorder.workspace = true
 aes.workspace = true
 cbc.workspace = true
+takes.workspace = true
