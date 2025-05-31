@@ -1,7 +1,6 @@
 use crate::certificate_chain::{CertificateChain, CertificateChainError};
-use crate::ticket::{Ticket, TicketError};
 use crate::wad::InstallableWad;
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::{Read, Seek, SeekFrom};
 use takes::{Ext, Takes};
 
 impl InstallableWad {

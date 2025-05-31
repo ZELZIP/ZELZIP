@@ -1,6 +1,6 @@
 use crate::ticket::{Ticket, TicketError};
 use crate::wad::InstallableWad;
-use std::io::{Read, Seek, SeekFrom, Take, Write};
+use std::io::{Read, Seek, SeekFrom, Write};
 use takes::{Ext, Takes};
 
 impl InstallableWad {

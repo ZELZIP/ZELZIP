@@ -1,6 +1,6 @@
+use crate::WriteEx;
 use crate::signed_blob_header::{SignedBlobHeader, SignedBlobHeaderError};
 use crate::title_id::TitleId;
-use crate::WriteEx;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io;
 use std::io::Read;
@@ -209,97 +209,100 @@ impl TitleMetadata {
     pub unsafe fn from_reader<T: Read + Seek>(
         reader: &mut T,
     ) -> Result<TitleMetadata, TitleMetadataError> {
-        let signed_blob_header = SignedBlobHeader::from_reader(reader)?;
+        unsafe {
+            let signed_blob_header = SignedBlobHeader::from_reader(reader)?;
 
-        let mut signature_issuer_bytes = [0; 64];
-        reader.read_exact(&mut signature_issuer_bytes)?;
+            let mut signature_issuer_bytes = [0; 64];
+            reader.read_exact(&mut signature_issuer_bytes)?;
 
-        let signature_issuer = crate::string_from_null_terminated_bytes(&signature_issuer_bytes)?;
+            let signature_issuer =
+                crate::string_from_null_terminated_bytes(&signature_issuer_bytes)?;
 
-        let tmd_version = reader.read_u8()?;
-        let certificate_authority_certificate_revocation_list_version = reader.read_u8()?;
-        let signer_certificate_revocation_list_version = reader.read_u8()?;
+            let tmd_version = reader.read_u8()?;
+            let certificate_authority_certificate_revocation_list_version = reader.read_u8()?;
+            let signer_certificate_revocation_list_version = reader.read_u8()?;
 
-        let is_vwii_only = match reader.read_u8()? {
-            0 => false,
-            1 => true,
+            let is_vwii_only = match reader.read_u8()? {
+                0 => false,
+                1 => true,
 
-            value => return Err(TitleMetadataError::InvalidIsVWiiValue(value)),
-        };
+                value => return Err(TitleMetadataError::InvalidIsVWiiValue(value)),
+            };
 
-        let ios_or_boot2_title_id_bytes = reader.read_u64::<BigEndian>()?;
+            let ios_or_boot2_title_id_bytes = reader.read_u64::<BigEndian>()?;
 
-        let ios_or_boot2_title_id = if ios_or_boot2_title_id_bytes != 0 {
-            Some(TitleId::new(ios_or_boot2_title_id_bytes))
-        } else {
-            None
-        };
+            let ios_or_boot2_title_id = if ios_or_boot2_title_id_bytes != 0 {
+                Some(TitleId::new(ios_or_boot2_title_id_bytes))
+            } else {
+                None
+            };
 
-        let title_id = TitleId::new(reader.read_u64::<BigEndian>()?);
+            let title_id = TitleId::new(reader.read_u64::<BigEndian>()?);
 
-        let platform_kind =
-            TitleMetadataPlatformKind::from_identifier(reader.read_u32::<BigEndian>()?)?;
-        let group_id = reader.read_u16::<BigEndian>()?;
+            let platform_kind =
+                TitleMetadataPlatformKind::from_identifier(reader.read_u32::<BigEndian>()?)?;
+            let group_id = reader.read_u16::<BigEndian>()?;
 
-        // Skip 2 zeroed bytes
-        reader.seek_relative(2)?;
+            // Skip 2 zeroed bytes
+            reader.seek_relative(2)?;
 
-        let region = TitleMetadataRegion::from_identifier(reader.read_u16::<BigEndian>()?)?;
+            let region = TitleMetadataRegion::from_identifier(reader.read_u16::<BigEndian>()?)?;
 
-        let mut ratings = [0; 16];
-        reader.read_exact(&mut ratings)?;
+            let mut ratings = [0; 16];
+            reader.read_exact(&mut ratings)?;
 
-        // Skip 12 reserved bytes
-        reader.seek_relative(12)?;
+            // Skip 12 reserved bytes
+            reader.seek_relative(12)?;
 
-        let mut ipc_mask = [0; 12];
-        reader.read_exact(&mut ipc_mask)?;
+            let mut ipc_mask = [0; 12];
+            reader.read_exact(&mut ipc_mask)?;
 
-        // Skip 18 reserved bytes
-        reader.seek_relative(18)?;
+            // Skip 18 reserved bytes
+            reader.seek_relative(18)?;
 
-        // Skip 3 access rights bytes as they were never used
-        reader.seek_relative(3)?;
+            // Skip 3 access rights bytes as they were never used
+            reader.seek_relative(3)?;
 
-        let access_rights_byte = reader.read_u8()?;
+            let access_rights_byte = reader.read_u8()?;
 
-        let is_full_ppc_access_allowed = (access_rights_byte & 0b00000001) == 1;
-        let is_dvd_access_allowed = (access_rights_byte & 0b00000010) >> 1 == 1;
+            let is_full_ppc_access_allowed = (access_rights_byte & 0b00000001) == 1;
+            let is_dvd_access_allowed = (access_rights_byte & 0b00000010) >> 1 == 1;
 
-        let title_version = reader.read_u16::<BigEndian>()?;
-        let number_of_content_entries = reader.read_u16::<BigEndian>()?;
-        let boot_content_index = reader.read_u16::<BigEndian>()?;
+            let title_version = reader.read_u16::<BigEndian>()?;
+            let number_of_content_entries = reader.read_u16::<BigEndian>()?;
+            let boot_content_index = reader.read_u16::<BigEndian>()?;
 
-        // Skip 2 unused bytes
-        reader.seek_relative(2)?;
+            // Skip 2 unused bytes
+            reader.seek_relative(2)?;
 
-        let mut content_entries = Vec::new();
+            let mut content_entries = Vec::new();
 
-        for _ in 0..number_of_content_entries {
-            content_entries.push(TitleMetadataContentEntry::from_reader(reader)?);
+            for _ in 0..number_of_content_entries {
+                content_entries.push(TitleMetadataContentEntry::from_reader(reader)?);
+            }
+
+            Ok(TitleMetadata {
+                signed_blob_header,
+                signature_issuer,
+                tmd_version,
+                certificate_authority_certificate_revocation_list_version,
+                signer_certificate_revocation_list_version,
+                is_vwii_only,
+                ios_or_boot2_title_id,
+                title_id,
+                platform_kind,
+                group_id,
+                region,
+                ratings,
+                ipc_mask,
+                is_full_ppc_access_allowed,
+                is_dvd_access_allowed,
+                title_version,
+                number_of_content_entries,
+                boot_content_index,
+                content_entries,
+            })
         }
-
-        Ok(TitleMetadata {
-            signed_blob_header,
-            signature_issuer,
-            tmd_version,
-            certificate_authority_certificate_revocation_list_version,
-            signer_certificate_revocation_list_version,
-            is_vwii_only,
-            ios_or_boot2_title_id,
-            title_id,
-            platform_kind,
-            group_id,
-            region,
-            ratings,
-            ipc_mask,
-            is_full_ppc_access_allowed,
-            is_dvd_access_allowed,
-            title_version,
-            number_of_content_entries,
-            boot_content_index,
-            content_entries,
-        })
     }
 
     pub fn dump<T: Write + Seek>(&self, writer: &mut T) -> io::Result<()> {

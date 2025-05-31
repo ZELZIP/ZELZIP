@@ -3,18 +3,13 @@ mod content;
 mod ticket;
 mod title_metadata;
 
-use crate::aes::Aes128CbcDec;
-use crate::aes::AesCbcDecryptStream;
-use crate::certificate_chain::{CertificateChain, CertificateChainError};
-use crate::ticket::{Ticket, TicketError};
-use crate::title_metadata::{TitleMetadata, TitleMetadataError};
-use aes::cipher::KeyIvInit;
+use crate::ticket::TicketError;
+use crate::title_metadata::TitleMetadataError;
 use byteorder::{BigEndian, ReadBytesExt};
 use std::io;
 use std::io::Read;
 use std::io::Seek;
-use std::io::SeekFrom;
-use std::io::{Take, Write};
+use std::io::Write;
 use thiserror::Error;
 
 #[derive(Error, Debug)]

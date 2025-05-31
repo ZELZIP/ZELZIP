@@ -1,4 +1,4 @@
-use aes::cipher::{block_padding::NoPadding, BlockDecryptMut};
+use aes::cipher::{BlockDecryptMut, block_padding::NoPadding};
 use std::io;
 use std::io::{Read, Seek, SeekFrom, Take};
 

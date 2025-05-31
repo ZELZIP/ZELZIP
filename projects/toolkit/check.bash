@@ -28,6 +28,7 @@ taplo format --check
 
 gotre::log::info "Checking Rust files sematics"
 cargo clippy
+cargo check-all-features
 
 gotre::log::info "Checking Rust files formatting"
 cargo fmt --check

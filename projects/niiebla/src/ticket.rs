@@ -1,9 +1,9 @@
+use crate::WriteEx;
 use crate::aes::Aes128CbcDec;
 use crate::common_key::{CommonKeyKind, CommonKeyKindError};
 use crate::signed_blob_header::{SignedBlobHeader, SignedBlobHeaderError};
 use crate::title_id::TitleId;
-use crate::WriteEx;
-use aes::cipher::{block_padding::NoPadding, BlockDecryptMut, KeyIvInit};
+use aes::cipher::{BlockDecryptMut, KeyIvInit, block_padding::NoPadding};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io;
 use std::io::Read;
@@ -157,91 +157,94 @@ impl Ticket {
     pub(crate) unsafe fn from_reader<T: Read + Seek>(
         reader: &mut T,
     ) -> Result<Ticket, TicketError> {
-        let signed_blob_header = SignedBlobHeader::from_reader(reader)?;
+        unsafe {
+            let signed_blob_header = SignedBlobHeader::from_reader(reader)?;
 
-        let mut signature_issuer_bytes = [0; 64];
-        reader.read_exact(&mut signature_issuer_bytes)?;
+            let mut signature_issuer_bytes = [0; 64];
+            reader.read_exact(&mut signature_issuer_bytes)?;
 
-        let signature_issuer = crate::string_from_null_terminated_bytes(&signature_issuer_bytes)?;
+            let signature_issuer =
+                crate::string_from_null_terminated_bytes(&signature_issuer_bytes)?;
 
-        let mut ecdh_data = [0; 60];
-        reader.read_exact(&mut ecdh_data)?;
+            let mut ecdh_data = [0; 60];
+            reader.read_exact(&mut ecdh_data)?;
 
-        let ticket_version = TicketVersion::from_number(reader.read_u8()?)?;
+            let ticket_version = TicketVersion::from_number(reader.read_u8()?)?;
 
-        // Skip 2 reserved bytes
-        reader.seek_relative(2)?;
+            // Skip 2 reserved bytes
+            reader.seek_relative(2)?;
 
-        let mut encrypted_title_key = [0; 16];
-        reader.read_exact(&mut encrypted_title_key)?;
+            let mut encrypted_title_key = [0; 16];
+            reader.read_exact(&mut encrypted_title_key)?;
 
-        // Skip 1 byte whose use is still unknown
-        reader.seek_relative(1)?;
+            // Skip 1 byte whose use is still unknown
+            reader.seek_relative(1)?;
 
-        let ticket_id = reader.read_u64::<BigEndian>()?;
+            let ticket_id = reader.read_u64::<BigEndian>()?;
 
-        let console_id = reader.read_u32::<BigEndian>()?;
+            let console_id = reader.read_u32::<BigEndian>()?;
 
-        let title_id = TitleId::new(reader.read_u64::<BigEndian>()?);
+            let title_id = TitleId::new(reader.read_u64::<BigEndian>()?);
 
-        // Skip 2 byte whose use is still unknown
-        reader.seek_relative(2)?;
+            // Skip 2 byte whose use is still unknown
+            reader.seek_relative(2)?;
 
-        let title_version = reader.read_u16::<BigEndian>()?;
-        let permitted_titles_mask = reader.read_u32::<BigEndian>()?;
-        let permit_mask = reader.read_u32::<BigEndian>()?;
+            let title_version = reader.read_u16::<BigEndian>()?;
+            let permitted_titles_mask = reader.read_u32::<BigEndian>()?;
+            let permit_mask = reader.read_u32::<BigEndian>()?;
 
-        let is_title_export_allowed = match reader.read_u8()? {
-            0 => false,
-            1 => true,
-            flag_value => return Err(TicketError::InvalidTitleExportFlag(flag_value)),
-        };
+            let is_title_export_allowed = match reader.read_u8()? {
+                0 => false,
+                1 => true,
+                flag_value => return Err(TicketError::InvalidTitleExportFlag(flag_value)),
+            };
 
-        let common_key_kind = CommonKeyKind::from_identifier(reader.read_u8()?)?;
+            let common_key_kind = CommonKeyKind::from_identifier(reader.read_u8()?)?;
 
-        // Skip 47 byte whose use is still unknown
-        reader.seek_relative(47)?;
+            // Skip 47 byte whose use is still unknown
+            reader.seek_relative(47)?;
 
-        let is_virtual_console_title = match reader.read_u8()? {
-            0 => false,
-            1 => true,
-            flag_value => return Err(TicketError::InvalidIsVirtualConsoleFlag(flag_value)),
-        };
+            let is_virtual_console_title = match reader.read_u8()? {
+                0 => false,
+                1 => true,
+                flag_value => return Err(TicketError::InvalidIsVirtualConsoleFlag(flag_value)),
+            };
 
-        let mut content_access_permissions = [0; 64];
-        reader.read_exact(&mut content_access_permissions)?;
+            let mut content_access_permissions = [0; 64];
+            reader.read_exact(&mut content_access_permissions)?;
 
-        // Skip padding of 2 bytes
-        reader.seek_relative(2)?;
+            // Skip padding of 2 bytes
+            reader.seek_relative(2)?;
 
-        let mut limit_entries = [const { TicketLimitEntry::NoLimit { kind: 0 } }; 8];
-        for limit_entry in &mut limit_entries {
-            *limit_entry = TicketLimitEntry::new(
-                // Kind
-                reader.read_u32::<BigEndian>()?,
-                // Associated value
-                reader.read_u32::<BigEndian>()?,
-            )?;
+            let mut limit_entries = [const { TicketLimitEntry::NoLimit { kind: 0 } }; 8];
+            for limit_entry in &mut limit_entries {
+                *limit_entry = TicketLimitEntry::new(
+                    // Kind
+                    reader.read_u32::<BigEndian>()?,
+                    // Associated value
+                    reader.read_u32::<BigEndian>()?,
+                )?;
+            }
+
+            Ok(Ticket {
+                signed_blob_header,
+                signature_issuer,
+                ecdh_data,
+                ticket_version,
+                encrypted_title_key,
+                ticket_id,
+                console_id,
+                title_id,
+                title_version,
+                permitted_titles_mask,
+                permit_mask,
+                is_title_export_allowed,
+                common_key_kind,
+                is_virtual_console_title,
+                content_access_permissions,
+                limit_entries,
+            })
         }
-
-        Ok(Ticket {
-            signed_blob_header,
-            signature_issuer,
-            ecdh_data,
-            ticket_version,
-            encrypted_title_key,
-            ticket_id,
-            console_id,
-            title_id,
-            title_version,
-            permitted_titles_mask,
-            permit_mask,
-            is_title_export_allowed,
-            common_key_kind,
-            is_virtual_console_title,
-            content_access_permissions,
-            limit_entries,
-        })
     }
 
     pub fn decrypt_title_key(&self) -> [u8; 16] {

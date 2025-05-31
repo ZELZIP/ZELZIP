@@ -1,5 +1,3 @@
-use crate::certificate_chain::{CertificateChain, CertificateChainError};
-use crate::ticket::{Ticket, TicketError};
 use crate::title_metadata::{TitleMetadata, TitleMetadataError};
 use crate::wad::InstallableWad;
 use std::io::{Read, Seek, SeekFrom, Write};

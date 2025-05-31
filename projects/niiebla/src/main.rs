@@ -1,4 +1,3 @@
-use niiebla::title_id::TitleId;
 use niiebla::wad::Wad;
 use std::fs::File;
 use std::fs::OpenOptions;

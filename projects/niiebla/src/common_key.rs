@@ -1,4 +1,3 @@
-use crate::WriteEx;
 use byteorder::WriteBytesExt;
 use std::io;
 use std::io::Write;

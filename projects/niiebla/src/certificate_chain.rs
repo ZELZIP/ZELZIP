@@ -178,33 +178,35 @@ impl Certificate {
     pub unsafe fn from_reader<T: Read + Seek>(
         reader: &mut T,
     ) -> Result<Certificate, CertificateChainError> {
-        let start_position = reader.stream_position()?;
-        let signature = CertificateSignature::from_reader(reader)?;
+        unsafe {
+            let start_position = reader.stream_position()?;
+            let signature = CertificateSignature::from_reader(reader)?;
 
-        // Fix aligment after signature
-        seek_to_relative_boundary(reader, start_position, 0x40)?;
+            // Fix aligment after signature
+            seek_to_relative_boundary(reader, start_position, 0x40)?;
 
-        let mut issuer_bytes = [0; 64];
-        reader.read_exact(&mut issuer_bytes)?;
-        let issuer = crate::string_from_null_terminated_bytes(&issuer_bytes)?;
+            let mut issuer_bytes = [0; 64];
+            reader.read_exact(&mut issuer_bytes)?;
+            let issuer = crate::string_from_null_terminated_bytes(&issuer_bytes)?;
 
-        let key_value_kind_identifier = reader.read_u32::<BigEndian>()?;
+            let key_value_kind_identifier = reader.read_u32::<BigEndian>()?;
 
-        let mut identity_bytes = [0; 64];
-        reader.read_exact(&mut identity_bytes)?;
-        let identity = crate::string_from_null_terminated_bytes(&identity_bytes)?;
+            let mut identity_bytes = [0; 64];
+            reader.read_exact(&mut identity_bytes)?;
+            let identity = crate::string_from_null_terminated_bytes(&identity_bytes)?;
 
-        let key = CertificateKey {
-            id: reader.read_u32::<BigEndian>()?,
-            value: CertificateKeyValue::from_reader(key_value_kind_identifier, reader)?,
-        };
+            let key = CertificateKey {
+                id: reader.read_u32::<BigEndian>()?,
+                value: CertificateKeyValue::from_reader(key_value_kind_identifier, reader)?,
+            };
 
-        Ok(Certificate {
-            signature,
-            issuer,
-            identity,
-            key,
-        })
+            Ok(Certificate {
+                signature,
+                issuer,
+                identity,
+                key,
+            })
+        }
     }
 
     pub fn new_dummy() -> Certificate {
@@ -266,17 +268,19 @@ impl CertificateChain {
         reader: &mut T,
         number_of_certificates: usize,
     ) -> Result<CertificateChain, CertificateChainError> {
-        let start_position = reader.stream_position()?;
-        let mut certificates = Vec::new();
+        unsafe {
+            let start_position = reader.stream_position()?;
+            let mut certificates = Vec::new();
 
-        for _ in 0..number_of_certificates {
-            certificates.push(Certificate::from_reader(reader)?);
+            for _ in 0..number_of_certificates {
+                certificates.push(Certificate::from_reader(reader)?);
 
-            // TODO: Put this into a extension trait
-            seek_to_relative_boundary(reader, start_position, 0x40)?;
+                // TODO: Put this into a extension trait
+                seek_to_relative_boundary(reader, start_position, 0x40)?;
+            }
+
+            Ok(CertificateChain { certificates })
         }
-
-        Ok(CertificateChain { certificates })
     }
 
     pub fn dump<W: Write + Seek>(&self, writer: &mut W) -> io::Result<()> {

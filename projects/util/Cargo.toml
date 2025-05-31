@@ -1,0 +1,14 @@
+[package]
+name = "gotre_util"
+version = "1.0.0"
+publish.workspace = true
+edition.workspace = true
+
+[lib]
+path = "src/util.rs"
+
+[dependencies]
+byteorder.workspace = true
+
+[lints]
+workspace = true
