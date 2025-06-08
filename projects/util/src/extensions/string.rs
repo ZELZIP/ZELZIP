@@ -1,12 +1,9 @@
-use std::string::FromUtf8Error;
+use alloc::string::{FromUtf8Error, String};
 
-/// Extension trait of [Read] with useful miscellaneous operations.
+/// Extension trait of [String] with useful miscellaneous operations.
 pub trait StringEx {
     /// Create a [String] from a null-terminated string buffer.
-    ///
-    /// # Safety
-    /// This function doesn't check if the given buffer is a valid UTF-8 string.
-    unsafe fn from_null_terminated_bytes(buffer: &[u8]) -> Result<String, FromUtf8Error> {
+    fn from_null_terminated_bytes(buffer: &[u8]) -> Result<String, FromUtf8Error> {
         let string_end = buffer
             .iter()
             .position(|&char| char == b'\0')
@@ -22,6 +19,8 @@ impl StringEx for String {}
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::vec;
+    use alloc::vec::Vec;
 
     const DUMMY_TEXT_ASCII: [u8; 3] = [72, 105, 33];
     const DUMMY_TEXT_STR: &str = "Hi!";
@@ -29,7 +28,7 @@ mod tests {
     #[test]
     fn test_string_from_null_terminated_bytes_no_null_char() {
         assert_eq!(
-            unsafe { String::from_null_terminated_bytes(&DUMMY_TEXT_ASCII).unwrap() },
+            String::from_null_terminated_bytes(&DUMMY_TEXT_ASCII).unwrap(),
             DUMMY_TEXT_STR
         );
     }
@@ -40,7 +39,7 @@ mod tests {
         buffer.append(&mut vec![0, 0, 0]);
 
         assert_eq!(
-            unsafe { String::from_null_terminated_bytes(&DUMMY_TEXT_ASCII).unwrap() },
+            String::from_null_terminated_bytes(&DUMMY_TEXT_ASCII).unwrap(),
             DUMMY_TEXT_STR
         );
     }

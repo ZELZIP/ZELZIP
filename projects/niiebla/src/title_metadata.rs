@@ -1,4 +1,3 @@
-use crate::WriteEx;
 use crate::signed_blob_header::{SignedBlobHeader, SignedBlobHeaderError};
 use crate::title_id::TitleId;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
@@ -8,6 +7,7 @@ use std::io::Seek;
 use std::io::Write;
 use std::string::FromUtf8Error;
 use thiserror::Error;
+use util::WriteEx;
 
 #[derive(Debug)]
 pub enum TitleMetadataContentEntryKind {
@@ -140,7 +140,6 @@ impl TitleMetadataRegion {
 pub struct TitleMetadata {
     pub signed_blob_header: SignedBlobHeader,
 
-    pub signature_issuer: String,
     pub tmd_version: u8,
 
     pub certificate_authority_certificate_revocation_list_version: u8,
@@ -210,13 +209,7 @@ impl TitleMetadata {
         reader: &mut T,
     ) -> Result<TitleMetadata, TitleMetadataError> {
         unsafe {
-            let signed_blob_header = SignedBlobHeader::from_reader(reader)?;
-
-            let mut signature_issuer_bytes = [0; 64];
-            reader.read_exact(&mut signature_issuer_bytes)?;
-
-            let signature_issuer =
-                crate::string_from_null_terminated_bytes(&signature_issuer_bytes)?;
+            let signed_blob_header = SignedBlobHeader::new(reader)?;
 
             let tmd_version = reader.read_u8()?;
             let certificate_authority_certificate_revocation_list_version = reader.read_u8()?;
@@ -283,7 +276,6 @@ impl TitleMetadata {
 
             Ok(TitleMetadata {
                 signed_blob_header,
-                signature_issuer,
                 tmd_version,
                 certificate_authority_certificate_revocation_list_version,
                 signer_certificate_revocation_list_version,
@@ -307,7 +299,6 @@ impl TitleMetadata {
 
     pub fn dump<T: Write + Seek>(&self, writer: &mut T) -> io::Result<()> {
         self.signed_blob_header.dump(writer)?;
-        writer.write_as_c_string_padded(&self.signature_issuer, 64)?;
         writer.write_u8(self.tmd_version)?;
         writer.write_u8(self.certificate_authority_certificate_revocation_list_version)?;
         writer.write_u8(self.signer_certificate_revocation_list_version)?;

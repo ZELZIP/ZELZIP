@@ -2,8 +2,13 @@ use aes::cipher::{BlockDecryptMut, block_padding::NoPadding};
 use std::io;
 use std::io::{Read, Seek, SeekFrom, Take};
 
+/// Decryptor of AES-128 encrypted bytes.
 pub type Aes128CbcDec = cbc::Decryptor<aes::Aes128>;
 
+// TODO(IMPROVE): Remove `Take` and properly use View (or request it on parameters). Change Seek
+// trait.
+
+/// Readable stream of AES-128 encrypted bytes.
 pub struct AesCbcDecryptStream<T: Read + Seek> {
     inner: T,
     cipher: Aes128CbcDec,
@@ -13,15 +18,13 @@ pub struct AesCbcDecryptStream<T: Read + Seek> {
 }
 
 impl<T: Read + Seek> AesCbcDecryptStream<T> {
-    pub(crate) fn new(
-        take: Take<T>,
-        cipher: Aes128CbcDec,
-    ) -> Result<AesCbcDecryptStream<T>, io::Error> {
+    /// Create a new decryption stream.
+    pub fn new(take: Take<T>, cipher: Aes128CbcDec) -> Result<Self, io::Error> {
         let size = take.limit();
         let mut inner = take.into_inner();
         let start_position = inner.stream_position()?;
 
-        Ok(AesCbcDecryptStream {
+        Ok(Self {
             inner,
             cipher,
             size,
@@ -30,6 +33,7 @@ impl<T: Read + Seek> AesCbcDecryptStream<T> {
         })
     }
 
+    /// Get the stored stream.
     pub fn into_inner(self) -> T {
         self.inner
     }

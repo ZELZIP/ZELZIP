@@ -2,7 +2,7 @@
   description = "GOTRE's monorepo for packages and services";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
 
     flake-parts.url = "github:hercules-ci/flake-parts";
 
@@ -53,9 +53,10 @@
             taplo
 
             ## Rust
-            pkgs.fenix.stable.completeToolchain
+            fenix.complete.toolchain
+	    cargo-all-features
 
-            ## Shared (YAML, TS, JS, HTML, CSS, JSON, Markdown)
+            ## YAML, TS, JS, HTML, CSS, JSON, Markdown
             nodePackages.prettier
 
             # Apps

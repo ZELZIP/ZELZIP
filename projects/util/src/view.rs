@@ -4,7 +4,7 @@ use std::io::{Read, Seek, SeekFrom, Write};
 
 /// Create a bounded limited view of a stream ([Seek] with [Read] and/or [Write]).
 ///
-/// The **original position of the stream may be changed**, please conside [RecallView] as an
+/// The **original position of the stream may be changed**, please conside [crate::RecallView] as an
 /// alternative.
 pub struct View<T: Seek> {
     inner: T,

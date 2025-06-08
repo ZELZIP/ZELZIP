@@ -4,11 +4,19 @@ version = "1.0.0"
 publish.workspace = true
 edition.workspace = true
 
+[features]
+default = ["std"]
+std = ["alloc"]
+alloc = []
+
 [lib]
 path = "src/util.rs"
 
 [dependencies]
 byteorder.workspace = true
+cfg-if.workspace = true
+aes.workspace = true
+cbc.workspace = true
 
 [lints]
 workspace = true

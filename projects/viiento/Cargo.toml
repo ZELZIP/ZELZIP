@@ -1,0 +1,15 @@
+[package]
+name = "viiento"
+version = "0.1.0"
+publish.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "viiento"
+path = "src/viiento.rs"
+
+[dependencies]
+niiebla.workspace = true
+
+[lints]
+workspace = true

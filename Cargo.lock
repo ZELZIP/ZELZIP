@@ -14,6 +14,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "bitflags"
+version = "2.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b8e56985ec62d17e9c1001dc89c88ecd7dc08e47eba5ec7c29c7b5eeecde967"
+
+[[package]]
 name = "block-padding"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -83,6 +89,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "gotre_util"
+version = "1.0.0"
+dependencies = [
+ "aes",
+ "byteorder",
+ "cbc",
+ "cfg-if",
+]
+
+[[package]]
 name = "inout"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -100,11 +116,14 @@ checksum = "d750af042f7ef4f724306de029d18836c26c1765a54a6a3f094cbd23a7267ffa"
 
 [[package]]
 name = "niiebla"
-version = "0.0.0"
+version = "1.0.0"
 dependencies = [
  "aes",
+ "bitflags",
  "byteorder",
  "cbc",
+ "cfg-if",
+ "gotre_util",
  "takes",
  "thiserror",
 ]
@@ -181,3 +200,10 @@ name = "version_check"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
+
+[[package]]
+name = "viiento"
+version = "0.1.0"
+dependencies = [
+ "niiebla",
+]

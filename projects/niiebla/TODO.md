@@ -4,7 +4,6 @@
   - Split crates
   - Design a "View"/"Buffer" (?Read + ?Write + Seek)
 - Newtype in title version
-- Change write_zeroed to plain seek_relative
 - InstallableWad level dump
 - RE the Ticket and TMD
 - Make another project for ViiENTO

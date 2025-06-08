@@ -4,13 +4,13 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use takes::{Ext, Takes};
 
 impl InstallableWad {
-    pub fn seek_title_metadata<S: Seek>(&self, seeker: &mut S) -> Result<(), TitleMetadataError> {
+    pub fn seek_title_metadata<T: Seek>(&self, stream: &mut T) -> Result<(), TitleMetadataError> {
         // The header is always aligned to the boundary
-        let title_metadata_offset = InstallableWad::HEADER_SIZE
-            + InstallableWad::align(self.certificate_chain_size)
-            + InstallableWad::align(self.ticket_size);
+        let title_metadata_offset = Self::HEADER_SIZE
+            + Self::align(self.certificate_chain_size)
+            + Self::align(self.ticket_size);
 
-        seeker.seek(SeekFrom::Start(title_metadata_offset))?;
+        stream.seek(SeekFrom::Start(title_metadata_offset))?;
         Ok(())
     }
 

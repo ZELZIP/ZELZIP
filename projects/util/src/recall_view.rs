@@ -8,6 +8,7 @@ use std::ptr;
 
 /// Like [View] but can remember the original position of the stream and automatically put it back
 /// to its correct place.
+#[cfg(feature = "std")]
 pub struct RecallView<T: Seek> {
     view: View<T>,
     original_position: u64,

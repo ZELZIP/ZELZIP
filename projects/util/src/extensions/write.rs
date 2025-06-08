@@ -6,6 +6,7 @@ use std::io::Write;
 pub trait WriteEx: Write {
     /// Write zero the given number of times
     fn write_zeroed(&mut self, number_of_zeroes: usize) -> io::Result<()> {
+        // TODO(IMPROVE): This can be done without an allocation with seek.
         self.write_all(&vec![0; number_of_zeroes])?;
 
         Ok(())

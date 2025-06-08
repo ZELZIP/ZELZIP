@@ -1,7 +1,7 @@
-use crate::aes::{Aes128CbcDec, AesCbcDecryptStream};
 use crate::wad::installable::{InstallableWad, InstallableWadError};
 use aes::cipher::KeyIvInit;
 use std::io::{Read, Seek, SeekFrom, Take};
+use util::{Aes128CbcDec, AesCbcDecryptStream};
 
 // TODO: Put this like Ticket sub-impl
 
@@ -13,12 +13,12 @@ impl InstallableWad {
     ) -> Result<Take<T>, InstallableWadError> {
         // The header is always aligned to the boundary
         let mut content_offset = InstallableWad::HEADER_SIZE
-            + crate::align_to_boundary(
+            + util::align_to_boundary(
                 self.certificate_chain_size as u64,
                 InstallableWad::SECTION_BOUNDARY,
             )
-            + crate::align_to_boundary(self.ticket_size as u64, InstallableWad::SECTION_BOUNDARY)
-            + crate::align_to_boundary(
+            + util::align_to_boundary(self.ticket_size as u64, InstallableWad::SECTION_BOUNDARY)
+            + util::align_to_boundary(
                 self.title_metadata_size as u64,
                 InstallableWad::SECTION_BOUNDARY,
             );
@@ -32,7 +32,7 @@ impl InstallableWad {
             }
 
             content_offset +=
-                crate::align_to_boundary(content_entry.size, InstallableWad::SECTION_BOUNDARY);
+                util::align_to_boundary(content_entry.size, InstallableWad::SECTION_BOUNDARY);
         }
 
         Err(InstallableWadError::ContentEntryIndexDoesntExist(
@@ -45,7 +45,7 @@ impl InstallableWad {
         mut reader: T,
         content_index: u16,
     ) -> Result<AesCbcDecryptStream<T>, InstallableWadError> {
-        let title_key = self.ticket(&mut reader)?.decrypt_title_key();
+        let title_key = self.ticket(&mut reader)?.decrypt_title_key_wii_method();
         let content_take = self.take_encrypted_content(reader, content_index)?;
 
         // Add 14 trailing zeroed bytes to the IV

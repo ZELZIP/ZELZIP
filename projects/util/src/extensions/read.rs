@@ -2,7 +2,7 @@ use byteorder::ReadBytesExt;
 use std::io;
 use std::io::Read;
 
-/// Extension trait of [Write] with useful miscellaneous operations.
+/// Extension trait of [Read] with useful miscellaneous operations.
 pub trait ReadEx: Read {
     /// Read a bool.
     fn read_bool(&mut self) -> io::Result<bool> {

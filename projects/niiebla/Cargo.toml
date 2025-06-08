@@ -1,11 +1,12 @@
 [package]
 name = "niiebla"
-version = "0.0.0"
+version = "1.0.0"
 edition.workspace = true
 publish.workspace = true
 
 [lib]
 path = "src/niiebla.rs"
+crate-type = ["rlib"]
 
 [dependencies]
 thiserror.workspace = true
@@ -13,3 +14,9 @@ byteorder.workspace = true
 aes.workspace = true
 cbc.workspace = true
 takes.workspace = true
+util.workspace = true
+cfg-if.workspace = true
+bitflags.workspace = true
+
+[lints]
+workspace = true
