@@ -14,7 +14,7 @@ use util::WriteEx;
 
 /// Manifest data regard the ownership of a title and its permissions over the hardware.
 ///
-/// Only compatible with versions zero (V0) and one (V1), present on the Nintendo Wii,
+/// Only compatible with versions zero (V0) and one (V1), present on the Nintendo Wii, Wii U,
 /// DSi and 3DS, as version two (V2), used on the Nintendo Switch and forward,
 /// has a completly different and incompatible format whose version entry
 /// has been reallocated to a different offset.
@@ -99,7 +99,8 @@ impl PreSwitchTicket {
         let signed_blob_header = SignedBlobHeader::new(stream)?;
         let ecc_public_key = util::read_exact!(stream, 60)?;
 
-        // TODO(IMPLEMENT): This should change when V1 support is here.
+        // TODO(IMPLEMENT): This should change when V1 support is here. Also greater than v1 should
+        // error.
         stream.seek_relative(1)?;
         let version_1_extension = None;
 
@@ -211,7 +212,7 @@ impl PreSwitchTicket {
         title_key
     }
 
-    /// Dump
+    /// Dump into a stream.
     pub fn dump<T: Write + Seek>(&self, mut stream: T) -> io::Result<()> {
         self.signed_blob_header.dump(&mut stream)?;
         stream.write_all(&self.ecc_public_key)?;

@@ -25,7 +25,7 @@ impl InstallableWad {
 
         let title_metadata = self.title_metadata(&mut reader)?;
 
-        for content_entry in title_metadata.content_entries {
+        for content_entry in title_metadata.content_chunk_entries {
             if content_entry.index == content_index {
                 reader.seek(SeekFrom::Start(content_offset))?;
                 return Ok(reader.take(content_entry.size));

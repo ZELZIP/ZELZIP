@@ -29,7 +29,7 @@ impl InstallableWad {
     ) -> Result<TitleMetadata, TitleMetadataError> {
         self.seek_title_metadata(reader)?;
 
-        Ok(unsafe { TitleMetadata::from_reader(reader)? })
+        Ok(unsafe { TitleMetadata::new(reader)? })
     }
 
     pub fn write_title_metadata<W: Write + Seek>(

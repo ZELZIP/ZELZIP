@@ -9,7 +9,7 @@ impl InstallableWad {
         seeker: &mut S,
     ) -> Result<(), CertificateChainError> {
         // The header is always aligned to the boundary
-        seeker.seek(SeekFrom::Start(InstallableWad::HEADER_SIZE))?;
+        seeker.seek(SeekFrom::Start(Self::HEADER_SIZE))?;
 
         Ok(())
     }
@@ -27,10 +27,8 @@ impl InstallableWad {
         &self,
         reader: &mut T,
     ) -> Result<CertificateChain, CertificateChainError> {
-        Ok(unsafe {
-            self.seek_certificate_chain(reader)?;
+        self.seek_certificate_chain(reader)?;
 
-            CertificateChain::new(reader, InstallableWad::NUMBER_OF_CERTIFICATES_STORED)?
-        })
+        CertificateChain::new(reader, Self::NUMBER_OF_CERTIFICATES_STORED)
     }
 }

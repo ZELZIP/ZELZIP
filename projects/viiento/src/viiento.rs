@@ -13,9 +13,13 @@ fn main() {
     let mut wad_file = File::open(first_arg).unwrap();
     let wad = Wad::try_new_installable(&mut wad_file).unwrap();
     let ticket = wad.ticket(&mut wad_file).unwrap();
+    let tmd = wad.title_metadata(&mut wad_file).unwrap();
+    let cert = wad.certificate_chain(&mut wad_file).unwrap();
 
     println!("WAD: {wad:?}");
     println!("TICKET: {ticket:?}");
+    println!("TMD: {tmd:?}");
+    println!("CERT: {cert:?}");
 
     let ticket_path = PathBuf::from("ticket.viiento.bin");
     let mut ticket_file = OpenOptions::new()

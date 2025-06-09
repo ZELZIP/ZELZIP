@@ -13,7 +13,8 @@ pub use ticket::*;
 
 mod title_metadata;
 pub use title_metadata::{
-    TitleMetadata, TitleMetadataContentEntry, TitleMetadataContentEntryKind, TitleMetadataRegion,
+    TitleMetadata, TitleMetadataContentEntry, TitleMetadataContentEntryKind,
+    TitleMetadataPlatformDataWiiRegion,
 };
 
 mod wii_common_key;
