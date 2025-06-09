@@ -1,3 +1,5 @@
+//! Implementation of the common encryption key used by Nintendo.
+
 use byteorder::WriteBytesExt;
 use std::io;
 use std::io::Write;
@@ -35,8 +37,8 @@ impl WiiCommonKeyKind {
     }
 
     /// Get the identifier associated with the given common key.
-    pub fn dump_identifier<T: Write>(&self, writer: &mut T) -> io::Result<()> {
-        writer.write_u8(match self {
+    pub fn dump_identifier<T: Write>(&self, stream: &mut T) -> io::Result<()> {
+        stream.write_u8(match self {
             Self::Normal => 0,
             Self::Korean => 1,
             Self::WiiUvWii => 2,

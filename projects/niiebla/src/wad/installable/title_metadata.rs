@@ -1,7 +1,7 @@
 use crate::title_metadata::{TitleMetadata, TitleMetadataError};
 use crate::wad::InstallableWad;
 use std::io::{Read, Seek, SeekFrom, Write};
-use takes::{Ext, Takes};
+use util::View;
 
 impl InstallableWad {
     pub fn seek_title_metadata<T: Seek>(&self, stream: &mut T) -> Result<(), TitleMetadataError> {
@@ -14,34 +14,34 @@ impl InstallableWad {
         Ok(())
     }
 
-    pub fn take_title_metadata<'a, T: Read + Seek>(
+    pub fn title_metadata_view<T: Read + Seek>(
         &self,
-        reader: &'a mut T,
-    ) -> Result<Takes<&'a mut T>, TitleMetadataError> {
-        self.seek_title_metadata(reader)?;
+        mut stream: T,
+    ) -> Result<View<T>, TitleMetadataError> {
+        self.seek_title_metadata(&mut stream)?;
 
-        Ok(reader.takes(self.title_metadata_size as u64)?)
+        Ok(View::new(stream, self.title_metadata_size as usize)?)
     }
 
     pub fn title_metadata<T: Read + Seek>(
         &self,
-        reader: &mut T,
+        stream: &mut T,
     ) -> Result<TitleMetadata, TitleMetadataError> {
-        self.seek_title_metadata(reader)?;
+        self.seek_title_metadata(stream)?;
 
-        Ok(unsafe { TitleMetadata::new(reader)? })
+        TitleMetadata::new(stream)
     }
 
-    pub fn write_title_metadata<W: Write + Seek>(
+    pub fn write_title_metadata<T: Write + Seek>(
         &mut self,
         new_title_metadata: &TitleMetadata,
-        writer: &mut W,
+        stream: &mut T,
     ) -> Result<(), TitleMetadataError> {
-        self.seek_title_metadata(writer)?;
+        self.seek_title_metadata(stream)?;
 
         // TODO(IMPROVE): The size of the TMD should change when the number of cntent entries
         // changes
-        new_title_metadata.dump(writer)?;
+        new_title_metadata.dump(stream)?;
 
         Ok(())
     }

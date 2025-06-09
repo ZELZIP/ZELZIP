@@ -124,7 +124,6 @@ dependencies = [
  "cbc",
  "cfg-if",
  "gotre_util",
- "takes",
  "thiserror",
 ]
 
@@ -156,12 +155,6 @@ dependencies = [
  "quote",
  "unicode-ident",
 ]
-
-[[package]]
-name = "takes"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1564b914f8f8e3a96478cc75b4831ba5586f0c2209bbce46f8bdebe9826588f1"
 
 [[package]]
 name = "thiserror"

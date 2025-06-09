@@ -1,3 +1,5 @@
+//! Implementation of the binary file format used by Nintendo to store titles without discs.
+
 pub mod installable;
 
 use crate::wad::installable::{InstallableWad, InstallableWadError};
@@ -39,15 +41,17 @@ pub enum WadError {
 
 impl Wad {
     /// Create a new [Wad] by parsing a stream.
-    pub fn new<T: Read + Seek>(reader: &mut T) -> Result<Self, WadError> {
+    pub fn new<T: Read + Seek>(stream: &mut T) -> Result<Self, WadError> {
         let mut magic_numbers_buffer = [0; 8];
-        reader.read_exact(&mut magic_numbers_buffer)?;
+        stream.read_exact(&mut magic_numbers_buffer)?;
 
         // Keep the cursor in the correct place for the file parsing
-        reader.rewind()?;
+        stream.rewind()?;
 
         match magic_numbers_buffer {
-            INSTALLABLE_WAD_MAGIC_NUMBERS => Ok(Self::Installable(InstallableWad::new(reader)?)),
+            INSTALLABLE_WAD_MAGIC_NUMBERS => {
+                Ok(Self::Installable(unsafe { InstallableWad::new(stream)? }))
+            }
 
             _ => Err(WadError::UnknownWadFormatError),
         }
@@ -55,8 +59,8 @@ impl Wad {
 
     /// Like [Self::new] but treats any format of WAD except the Installable ones as an
     /// error.
-    pub fn try_new_installable<T: Read + Seek>(reader: &mut T) -> Result<InstallableWad, WadError> {
-        match Self::new(reader)? {
+    pub fn try_new_installable<T: Read + Seek>(stream: &mut T) -> Result<InstallableWad, WadError> {
+        match Self::new(stream)? {
             Self::Installable(installable_wad) => Ok(installable_wad),
 
             _ => Err(WadError::UndesiredWadFormat),

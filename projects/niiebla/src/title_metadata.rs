@@ -1,3 +1,5 @@
+//! Implementation of the binary file format used by Nintendo to store title metadata.
+
 use crate::signed_blob_header::{SignedBlobHeader, SignedBlobHeaderError};
 use crate::title_id::TitleId;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
@@ -9,7 +11,8 @@ use std::string::FromUtf8Error;
 use thiserror::Error;
 use util::{ReadEx, WriteEx};
 
-/// Manifest data regard the title itself, its structure and allowed system access.
+/// Manifest data regard the title itself, its structure and allowed system access (Also known as
+/// `TMD` data).
 ///
 /// Compatible with both versions zero (V0) and one (V1), present on the Nintendo Wii, Wii U
 /// DSi and 3DS
@@ -59,7 +62,7 @@ pub struct TitleMetadata {
     pub group_id: u16,
 
     /// Bitflags of access right to the hardware, its meaning depends on the platform, the access
-    /// to this entry is recommended to use platform aware methods like [Self::has_ppu_access] or [Self::has_dvd_access].
+    /// to this entry is recommended to use platform aware methods like [Self::has_ppc_access] or [Self::has_dvd_access].
     // TODO(IMPLEMENT): Per platform methods.
     pub access_rights: u32,
 
@@ -84,11 +87,7 @@ pub struct TitleMetadata {
 
 impl TitleMetadata {
     /// Create a new installable Wad representation.
-    ///
-    /// # Safety
-    /// The given buffer is assumed to be from an title metadata entry,
-    /// the current position of the Seek pointer is taken as the start.
-    pub unsafe fn new<T: Read + Seek>(stream: &mut T) -> Result<Self, TitleMetadataError> {
+    pub fn new<T: Read + Seek>(stream: &mut T) -> Result<Self, TitleMetadataError> {
         let signed_blob_header = SignedBlobHeader::new(stream)?;
 
         // TODO(IMPLEMENT): Add support for v1.
@@ -264,7 +263,7 @@ impl TitleMetadata {
     /// If the title has access to all hardware from its main PPC chip without using a IOS between
     /// the comunication (aka disable the `AHBPROT` protection).
     /// Only on Wii (and Wii U vWii) platforms.
-    pub fn has_ppm_access(&self) -> Result<bool, TitleMetadataError> {
+    pub fn has_ppc_access(&self) -> Result<bool, TitleMetadataError> {
         if let TitleMetadataPlatformData::Wii {
             is_wii_u_vwii_only_title: _,
             region: _,
@@ -338,8 +337,8 @@ impl TitleMetadataPlatformData {
         }
     }
 
-    fn dump_identifier<W: Write>(&self, writer: &mut W) -> io::Result<()> {
-        writer.write_u32::<BigEndian>(match self {
+    fn dump_identifier<T: Write>(&self, stream: &mut T) -> io::Result<()> {
+        stream.write_u32::<BigEndian>(match self {
             Self::IQueNetCard => 0,
 
             Self::Wii {
@@ -378,8 +377,8 @@ impl TitleMetadataPlatformDataWiiRegion {
         }
     }
 
-    fn dump_identifier<W: Write>(&self, writer: &mut W) -> io::Result<()> {
-        writer.write_u16::<BigEndian>(match &self {
+    fn dump_identifier<T: Write>(&self, stream: &mut T) -> io::Result<()> {
+        stream.write_u16::<BigEndian>(match &self {
             Self::Japan => 0,
             Self::USA => 1,
             Self::Europe => 2,
@@ -457,18 +456,18 @@ impl TitleMetadataContentEntry {
         })
     }
 
-    fn dump<W: Write>(&self, writer: &mut W) -> io::Result<()> {
-        writer.write_u32::<BigEndian>(self.id)?;
-        writer.write_u16::<BigEndian>(self.index)?;
+    fn dump<T: Write>(&self, stream: &mut T) -> io::Result<()> {
+        stream.write_u32::<BigEndian>(self.id)?;
+        stream.write_u16::<BigEndian>(self.index)?;
 
-        writer.write_u16::<BigEndian>(match &self.kind {
+        stream.write_u16::<BigEndian>(match &self.kind {
             TitleMetadataContentEntryKind::Normal => 0x0001,
             TitleMetadataContentEntryKind::Dlc => 0x4001,
             TitleMetadataContentEntryKind::Shared => 0x8001,
         })?;
 
-        writer.write_u64::<BigEndian>(self.size)?;
-        writer.write_all(&self.hash)?;
+        stream.write_u64::<BigEndian>(self.size)?;
+        stream.write_all(&self.hash)?;
 
         Ok(())
     }

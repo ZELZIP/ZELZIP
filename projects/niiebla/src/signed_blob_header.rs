@@ -1,3 +1,5 @@
+//! Implementation of the binary format used by Nintendo to sign files.
+
 use byteorder::{BE, ReadBytesExt, WriteBytesExt};
 use std::boxed::Box;
 use std::io::{self, Read, Seek, Write};

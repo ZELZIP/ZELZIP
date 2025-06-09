@@ -21,14 +21,17 @@ fn main() {
     println!("TMD: {tmd:?}");
     println!("CERT: {cert:?}");
 
-    let ticket_path = PathBuf::from("ticket.viiento.bin");
-    let mut ticket_file = OpenOptions::new()
+    let content_path = PathBuf::from("content.i0.viiento.decrypted.bin");
+    let mut content_file = OpenOptions::new()
         .create(true)
         .truncate(true)
         .write(true)
-        .open(ticket_path)
+        .open(content_path)
         .unwrap();
 
-    let mut ticket_view = wad.ticket_view(&mut wad_file).unwrap();
-    io::copy(&mut ticket_view, &mut ticket_file).unwrap();
+    println!("CREATING DECRYPTION VIEW");
+    let mut content_view = wad.decrypted_content_view(&mut wad_file, 0).unwrap();
+
+    println!("COPYING AND DECRYPTING");
+    io::copy(&mut content_view, &mut content_file).unwrap();
 }

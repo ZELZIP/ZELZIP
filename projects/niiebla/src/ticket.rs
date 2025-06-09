@@ -1,3 +1,5 @@
+//! Implementation of the binary file format used by Nintendo to store tickets.
+
 use crate::signed_blob_header::{SignedBlobHeader, SignedBlobHeaderError};
 use crate::title_id::TitleId;
 use crate::wii_common_key::{CommonKeyKindError, WiiCommonKeyKind};
@@ -95,7 +97,7 @@ pub struct PreSwitchTicket {
 
 impl PreSwitchTicket {
     /// Parse a ticket.
-    pub(crate) fn new<T: Read + Seek>(stream: &mut T) -> Result<Self, PreSwitchTicketError> {
+    pub fn new<T: Read + Seek>(stream: &mut T) -> Result<Self, PreSwitchTicketError> {
         let signed_blob_header = SignedBlobHeader::new(stream)?;
         let ecc_public_key = util::read_exact!(stream, 60)?;
 
@@ -413,19 +415,19 @@ impl PreSwitchTicketLimitEntry {
         })
     }
 
-    fn dump<T: Write>(&self, writer: &mut T) -> io::Result<()> {
+    fn dump<T: Write>(&self, stream: &mut T) -> io::Result<()> {
         match self {
             Self::NoLimit { kind } => {
-                writer.write_u32::<BE>(*kind)?;
-                writer.write_zeroed(4)?;
+                stream.write_u32::<BE>(*kind)?;
+                stream.write_zeroed(4)?;
             }
             Self::TimeLimit { minutes } => {
-                writer.write_u32::<BE>(1)?;
-                writer.write_u32::<BE>(*minutes)?;
+                stream.write_u32::<BE>(1)?;
+                stream.write_u32::<BE>(*minutes)?;
             }
             Self::LaunchLimit { number_of_launches } => {
-                writer.write_u32::<BE>(4)?;
-                writer.write_u32::<BE>(*number_of_launches)?;
+                stream.write_u32::<BE>(4)?;
+                stream.write_u32::<BE>(*number_of_launches)?;
             }
         }
 

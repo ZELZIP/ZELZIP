@@ -30,7 +30,7 @@ pub trait WriteEx: Write {
     }
 }
 
-impl<W: Write> WriteEx for W {}
+impl<T: Write> WriteEx for T {}
 
 #[cfg(test)]
 mod tests {

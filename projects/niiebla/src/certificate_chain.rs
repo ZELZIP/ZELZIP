@@ -1,3 +1,5 @@
+//! Implementation of the binary file format used by Nintendo to store certificate chains.
+
 use crate::signed_blob_header::{SignedBlobHeader, SignedBlobHeaderError};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{self, Read, Seek, Write};
@@ -129,18 +131,18 @@ pub enum CertificateKeyValue {
 }
 
 impl CertificateKeyValue {
-    fn new<T: Read + Seek>(identifier: u32, reader: &mut T) -> Result<Self, CertificateChainError> {
+    fn new<T: Read + Seek>(identifier: u32, stream: &mut T) -> Result<Self, CertificateChainError> {
         let public_key = match identifier {
             0 => {
-                let buf = util::read_exact!(reader, 512 + 4)?;
+                let buf = util::read_exact!(stream, 512 + 4)?;
                 Self::Rsa4096(Box::new(buf))
             }
             1 => {
-                let buf = util::read_exact!(reader, 256 + 4)?;
+                let buf = util::read_exact!(stream, 256 + 4)?;
                 Self::Rsa2048(Box::new(buf))
             }
             2 => {
-                let buf = util::read_exact!(reader, 60)?;
+                let buf = util::read_exact!(stream, 60)?;
                 Self::EccB223(Box::new(buf))
             }
 
@@ -150,8 +152,8 @@ impl CertificateKeyValue {
         Ok(public_key)
     }
 
-    pub fn dump_kind_identifier<W: Write>(&self, writer: &mut W) -> io::Result<()> {
-        writer.write_u32::<BigEndian>(match self {
+    pub fn dump_kind_identifier<T: Write>(&self, stream: &mut T) -> io::Result<()> {
+        stream.write_u32::<BigEndian>(match self {
             Self::Rsa4096(_) => 0,
             Self::Rsa2048(_) => 1,
             Self::EccB223(_) => 2,
@@ -160,11 +162,11 @@ impl CertificateKeyValue {
         Ok(())
     }
 
-    pub fn dump_value<W: Write>(&self, writer: &mut W) -> io::Result<()> {
+    pub fn dump_value<T: Write>(&self, stream: &mut T) -> io::Result<()> {
         match self {
-            Self::Rsa4096(value) => writer.write_all(value.as_slice())?,
-            Self::Rsa2048(value) => writer.write_all(value.as_slice())?,
-            Self::EccB223(value) => writer.write_all(value.as_slice())?,
+            Self::Rsa4096(value) => stream.write_all(value.as_slice())?,
+            Self::Rsa2048(value) => stream.write_all(value.as_slice())?,
+            Self::EccB223(value) => stream.write_all(value.as_slice())?,
         }
 
         Ok(())

@@ -1,3 +1,5 @@
+//! Implementation of a installable WAD file.
+
 mod certificate_chain;
 mod content;
 mod ticket;
@@ -20,6 +22,7 @@ pub struct InstallableWad {
     pub ticket_size: u32,
     pub title_metadata_size: u32,
     pub content_size: u32,
+    // TODO(IMPLEMENT): Support for footer info.
     pub footer_size: u32,
 }
 
@@ -35,9 +38,8 @@ impl InstallableWad {
     /// Create a new installable Wad representation.
     ///
     /// # Safety
-    /// The given buffer is assumed to be from an installable WAD,
-    /// the current position of the Seek pointer is taken as the start.
-    pub(crate) fn new<T: Read + Seek>(stream: &mut T) -> Result<Self, InstallableWadError> {
+    /// The given buffer is assumed to be from an installable WAD.
+    pub(crate) unsafe fn new<T: Read + Seek>(stream: &mut T) -> Result<Self, InstallableWadError> {
         let header_size = stream.read_u32::<BigEndian>()?;
         let kind = InstallableWadKind::new(stream)?;
         let version = stream.read_u16::<BigEndian>()?;

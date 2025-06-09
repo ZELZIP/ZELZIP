@@ -15,7 +15,6 @@ thiserror = "2.0.12"
 byteorder = "1.5.0"
 aes = "0.8.4"
 cbc = { version = "0.1.2", features = ["std"] }
-takes = "0.1.0"
 util = { package = "gotre_util", path = "projects/util" }
 niiebla = { path = "projects/niiebla" }
 cfg-if = "1.0.0"

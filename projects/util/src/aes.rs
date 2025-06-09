@@ -1,119 +1,78 @@
 use aes::cipher::{BlockDecryptMut, block_padding::NoPadding};
 use std::io;
-use std::io::{Read, Seek, SeekFrom, Take};
+use std::io::{Read, Seek, SeekFrom};
 
 /// Decryptor of AES-128 encrypted bytes.
 pub type Aes128CbcDec = cbc::Decryptor<aes::Aes128>;
 
-// TODO(IMPROVE): Remove `Take` and properly use View (or request it on parameters). Change Seek
-// trait.
-
 /// Readable stream of AES-128 encrypted bytes.
 pub struct AesCbcDecryptStream<T: Read + Seek> {
-    inner: T,
+    stream: T,
     cipher: Aes128CbcDec,
-    size: u64,
-    start_position: u64,
-    current_position: u64,
 }
 
 impl<T: Read + Seek> AesCbcDecryptStream<T> {
     /// Create a new decryption stream.
-    pub fn new(take: Take<T>, cipher: Aes128CbcDec) -> Result<Self, io::Error> {
-        let size = take.limit();
-        let mut inner = take.into_inner();
-        let start_position = inner.stream_position()?;
-
-        Ok(Self {
-            inner,
-            cipher,
-            size,
-            start_position,
-            current_position: 0,
-        })
+    pub fn new(stream: T, cipher: Aes128CbcDec) -> Result<Self, io::Error> {
+        Ok(Self { stream, cipher })
     }
 
     /// Get the stored stream.
     pub fn into_inner(self) -> T {
-        self.inner
+        self.stream
     }
 }
 
 impl<T: Read + Seek> Read for AesCbcDecryptStream<T> {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-        let start = if self.current_position == 0 {
-            0
+        let original_position = self.stream.stream_position()?;
+        let stream_len = self.stream.seek(SeekFrom::End(0))? + 1;
+
+        // If the position is not aligned to a block then align it to the previous 16 byte boundary
+        let start_position = if original_position % 16 == 0 {
+            original_position
         } else {
-            crate::align_to_boundary(self.current_position, 16) - 16
+            crate::align_to_boundary(self.stream.stream_position()?, 16) - 16
         };
 
-        let start_offset = self.current_position - start;
+        let mut buf_len = buf.len() as u64;
 
-        let len = crate::align_to_boundary(start_offset + buf.len() as u64, 16) as usize;
+        if start_position + buf_len > stream_len {
+            buf_len -= (start_position + buf_len) - stream_len
+        };
+
+        let start_padding = start_position - original_position;
+
+        self.stream.seek(std::io::SeekFrom::Start(start_position))?;
+
+        // Make the buffer big enough to store the targer buffer size, the extra start padding and
+        // the padding up to the next 16 byte boundary.
+        let len = crate::align_to_boundary(start_padding + buf_len, 16) as usize;
 
         let mut encrypted_buffer = vec![0; len].into_boxed_slice();
         let mut decrypted_buffer = vec![0; len].into_boxed_slice();
 
-        self.inner
-            .seek(std::io::SeekFrom::Start(self.start_position + start))?;
-
-        self.inner.read(&mut encrypted_buffer)?;
+        self.stream.read(&mut encrypted_buffer)?;
 
         self.cipher
             .clone()
             .decrypt_padded_b2b_mut::<NoPadding>(&encrypted_buffer, &mut decrypted_buffer)
             .map_err(|err| io::Error::other(format!("Unable to decrypt the buffer: {err}")))?;
 
-        buf.clone_from_slice(
-            &decrypted_buffer[start_offset as usize..start_offset as usize + buf.len()],
-        );
+        for (i, value) in decrypted_buffer
+            [start_padding as usize..(start_padding + buf_len) as usize]
+            .iter()
+            .enumerate()
+        {
+            buf[i] = *value
+        }
 
-        self.current_position += buf.len() as u64;
-
-        Ok(buf.len())
+        Ok(buf_len as usize)
     }
 }
 
 impl<T: Read + Seek> Seek for AesCbcDecryptStream<T> {
     fn seek(&mut self, pos: std::io::SeekFrom) -> std::io::Result<u64> {
-        const SEEK_OUT_OF_BOUNDS_TOO_SMALL_MESSAGE: &str =
-            "An AES stream cannot be seeked outside its size";
-
-        let new_current_position = match pos {
-            SeekFrom::Start(value) => {
-                if value >= self.size {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        SEEK_OUT_OF_BOUNDS_TOO_SMALL_MESSAGE,
-                    ));
-                }
-
-                self.current_position = value;
-
-                return Ok(self.current_position);
-            }
-
-            SeekFrom::Current(value) => self.current_position as i64 + value,
-
-            SeekFrom::End(value) => (self.size as i64 - 1) + value,
-        };
-
-        if new_current_position < 0 {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "An AES stream cannot be seeked to negative values",
-            ));
-        }
-
-        if new_current_position as u64 >= self.size {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                SEEK_OUT_OF_BOUNDS_TOO_SMALL_MESSAGE,
-            ));
-        }
-
-        self.current_position = new_current_position as u64;
-
-        Ok(self.current_position)
+        self.stream.seek(pos)
     }
 }

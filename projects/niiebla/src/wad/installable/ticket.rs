@@ -17,9 +17,8 @@ impl InstallableWad {
         mut stream: T,
     ) -> Result<View<T>, PreSwitchTicketError> {
         self.seek_ticket(&mut stream)?;
-        let view = View::new(stream, self.ticket_size as usize)?;
 
-        Ok(view)
+        Ok(View::new(stream, self.ticket_size as usize)?)
     }
 
     pub fn ticket<T: Read + Seek>(
@@ -31,15 +30,15 @@ impl InstallableWad {
         PreSwitchTicket::new(stream)
     }
 
-    pub fn write_ticket<W: Write + Seek>(
+    pub fn write_ticket<T: Write + Seek>(
         &mut self,
         new_ticket: &PreSwitchTicket,
-        writer: &mut W,
+        stream: &mut T,
     ) -> Result<(), PreSwitchTicketError> {
-        self.seek_ticket(writer)?;
+        self.seek_ticket(stream)?;
 
         // TODO(IMPROVE): The size of a ticket should change if Ticket goes V0 <-> V1
-        new_ticket.dump(writer)?;
+        new_ticket.dump(stream)?;
 
         Ok(())
     }
