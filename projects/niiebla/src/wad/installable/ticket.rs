@@ -1,17 +1,22 @@
 use crate::ticket::{PreSwitchTicket, PreSwitchTicketError};
 use crate::wad::InstallableWad;
 use std::io::{Read, Seek, SeekFrom, Write};
+use util::StreamPin;
 use util::View;
 
 impl InstallableWad {
-    pub fn seek_ticket<T: Seek>(&self, stream: &mut T) -> Result<(), PreSwitchTicketError> {
+    /// Seek the stream of the WAD to the start of the ticket.
+    pub fn seek_ticket<T: Seek>(&self, mut stream: T) -> Result<(), PreSwitchTicketError> {
         // The header is always aligned to the boundary
-        let ticket_offset = Self::HEADER_SIZE + Self::align(self.certificate_chain_size);
+        let ticket_offset = Self::HEADER_SIZE + Self::align_u64(self.certificate_chain_size);
+
+        eprintln!("OFFSET: {ticket_offset}");
 
         stream.seek(SeekFrom::Start(ticket_offset))?;
         Ok(())
     }
 
+    /// Crate a [View] into the ticket stored inside the WAD stream.
     pub fn ticket_view<T: Read + Seek>(
         &self,
         mut stream: T,
@@ -21,24 +26,33 @@ impl InstallableWad {
         Ok(View::new(stream, self.ticket_size as usize)?)
     }
 
+    /// Parse the ticket stored inside the WAD stream.
     pub fn ticket<T: Read + Seek>(
         &self,
-        stream: &mut T,
+        mut stream: T,
     ) -> Result<PreSwitchTicket, PreSwitchTicketError> {
-        self.seek_ticket(stream)?;
+        self.seek_ticket(&mut stream)?;
 
         PreSwitchTicket::new(stream)
     }
 
+    /// Write a new ticket into the stream of a WAD.
     pub fn write_ticket<T: Write + Seek>(
         &mut self,
         new_ticket: &PreSwitchTicket,
-        stream: &mut T,
+        stream: T,
     ) -> Result<(), PreSwitchTicketError> {
-        self.seek_ticket(stream)?;
+        let mut stream = StreamPin::new(stream)?;
 
-        // TODO(IMPROVE): The size of a ticket should change if Ticket goes V0 <-> V1
-        new_ticket.dump(stream)?;
+        self.seek_ticket(&mut stream)?;
+
+        new_ticket.dump(&mut stream)?;
+        stream.align_zeroed(64)?;
+
+        self.ticket_size = new_ticket.size();
+
+        stream.rewind()?;
+        self.dump(stream)?;
 
         Ok(())
     }

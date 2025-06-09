@@ -7,11 +7,14 @@ mod title_metadata;
 
 use crate::ticket::PreSwitchTicketError;
 use crate::title_metadata::TitleMetadataError;
-use byteorder::{BigEndian, ReadBytesExt};
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io;
 use std::io::Read;
 use std::io::Seek;
+use std::io::Write;
 use thiserror::Error;
+use util::StreamPin;
+use util::WriteEx;
 
 #[derive(Debug)]
 pub struct InstallableWad {
@@ -31,7 +34,7 @@ impl InstallableWad {
     const SECTION_BOUNDARY: u64 = 64;
     const NUMBER_OF_CERTIFICATES_STORED: usize = 3;
 
-    fn align(value: u32) -> u64 {
+    fn align_u64(value: u32) -> u64 {
         util::align_to_boundary(value as u64, Self::SECTION_BOUNDARY)
     }
 
@@ -39,9 +42,9 @@ impl InstallableWad {
     ///
     /// # Safety
     /// The given buffer is assumed to be from an installable WAD.
-    pub(crate) unsafe fn new<T: Read + Seek>(stream: &mut T) -> Result<Self, InstallableWadError> {
+    pub(crate) unsafe fn new<T: Read + Seek>(mut stream: T) -> Result<Self, InstallableWadError> {
         let header_size = stream.read_u32::<BigEndian>()?;
-        let kind = InstallableWadKind::new(stream)?;
+        let kind = InstallableWadKind::new(&mut stream)?;
         let version = stream.read_u16::<BigEndian>()?;
         let certificate_chain_size = stream.read_u32::<BigEndian>()?;
 
@@ -64,9 +67,29 @@ impl InstallableWad {
             footer_size,
         })
     }
+
+    /// Dump into a stream.
+    pub fn dump<T: Write + Seek>(&self, stream: T) -> io::Result<()> {
+        let mut stream = StreamPin::new(stream)?;
+
+        stream.write_u32::<BigEndian>(32)?;
+        write!(stream, "Is")?;
+        stream.write_u16::<BigEndian>(0)?;
+        stream.write_u32::<BigEndian>(self.certificate_chain_size)?;
+        stream.write_zeroed(4)?;
+
+        stream.write_u32::<BigEndian>(self.ticket_size)?;
+        stream.write_u32::<BigEndian>(self.title_metadata_size)?;
+        stream.write_u32::<BigEndian>(self.content_size)?;
+        stream.write_u32::<BigEndian>(self.footer_size)?;
+        stream.align_zeroed(64)?;
+
+        Ok(())
+    }
 }
 
 #[derive(Error, Debug)]
+#[allow(missing_docs)]
 pub enum InstallableWadError {
     #[error("An IO error has occurred: {0}")]
     IoError(#[from] io::Error),
@@ -91,7 +114,7 @@ pub enum InstallableWadKind {
 }
 
 impl InstallableWadKind {
-    fn new<T: Read>(stream: &mut T) -> Result<Self, InstallableWadError> {
+    fn new<T: Read>(mut stream: T) -> Result<Self, InstallableWadError> {
         let bytes = util::read_exact!(stream, 2)?;
 
         Ok(match &bytes {

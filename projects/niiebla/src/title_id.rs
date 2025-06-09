@@ -23,7 +23,7 @@ impl TitleId {
     }
 
     /// Dump a title ID into a stream.
-    pub fn dump<T: Write>(&self, stream: &mut T) -> io::Result<()> {
+    pub fn dump<T: Write>(&self, mut stream: T) -> io::Result<()> {
         stream.write_u64::<BigEndian>(self.0)?;
 
         Ok(())

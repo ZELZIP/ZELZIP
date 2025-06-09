@@ -19,6 +19,7 @@ pub enum WiiCommonKeyKind {
 }
 
 #[derive(Error, Debug)]
+#[allow(missing_docs)]
 pub enum CommonKeyKindError {
     #[error("Unknown common key index: {0}")]
     UnknownCommonKeyIndex(u8),
@@ -37,7 +38,7 @@ impl WiiCommonKeyKind {
     }
 
     /// Get the identifier associated with the given common key.
-    pub fn dump_identifier<T: Write>(&self, stream: &mut T) -> io::Result<()> {
+    pub fn dump_identifier<T: Write>(&self, mut stream: T) -> io::Result<()> {
         stream.write_u8(match self {
             Self::Normal => 0,
             Self::Korean => 1,

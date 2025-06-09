@@ -97,8 +97,8 @@ pub struct PreSwitchTicket {
 
 impl PreSwitchTicket {
     /// Parse a ticket.
-    pub fn new<T: Read + Seek>(stream: &mut T) -> Result<Self, PreSwitchTicketError> {
-        let signed_blob_header = SignedBlobHeader::new(stream)?;
+    pub fn new<T: Read + Seek>(mut stream: T) -> Result<Self, PreSwitchTicketError> {
+        let signed_blob_header = SignedBlobHeader::new(&mut stream)?;
         let ecc_public_key = util::read_exact!(stream, 60)?;
 
         // TODO(IMPLEMENT): This should change when V1 support is here. Also greater than v1 should
@@ -253,11 +253,23 @@ impl PreSwitchTicket {
 
         Ok(())
     }
+
+    /// Get the sizes of the ticket in bytes.
+    pub fn size(&self) -> u32 {
+        if self.version_1_extension.is_none() {
+            // Manually calculated value for v0 tickets
+            return 292 + self.signed_blob_header.size();
+        }
+
+        // TODO(IMPROVE): Support for v1 ticket.
+        panic!();
+    }
 }
 
 #[derive(Error, Debug)]
 #[allow(missing_docs)]
 pub enum PreSwitchTicketError {
+    /// IO error.
     #[error("IO error: {0}")]
     IoError(#[from] io::Error),
 
@@ -415,7 +427,7 @@ impl PreSwitchTicketLimitEntry {
         })
     }
 
-    fn dump<T: Write>(&self, stream: &mut T) -> io::Result<()> {
+    fn dump<T: Write>(&self, mut stream: T) -> io::Result<()> {
         match self {
             Self::NoLimit { kind } => {
                 stream.write_u32::<BE>(*kind)?;

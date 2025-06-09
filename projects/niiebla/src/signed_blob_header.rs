@@ -19,7 +19,7 @@ pub struct SignedBlobHeader {
 
 impl SignedBlobHeader {
     /// Create a new [SignedBlobHeader] by parsing an stream.
-    pub fn new<T: Read + Seek>(stream: &mut T) -> Result<Self, SignedBlobHeaderError> {
+    pub fn new<T: Read + Seek>(stream: T) -> Result<Self, SignedBlobHeaderError> {
         let mut stream = StreamPin::new(stream)?;
 
         let signature = SignedBlobHeaderSignature::new(&mut stream)?;
@@ -31,7 +31,7 @@ impl SignedBlobHeader {
     }
 
     /// Dump the signed blob header..
-    pub fn dump<T: Write + Seek>(&self, stream: &mut T) -> io::Result<()> {
+    pub fn dump<T: Write + Seek>(&self, stream: T) -> io::Result<()> {
         let mut stream = StreamPin::new(stream)?;
 
         self.signature.dump(&mut stream)?;
@@ -40,9 +40,25 @@ impl SignedBlobHeader {
 
         Ok(())
     }
+
+    /// Get the sizes of the signed blob header in bytes.
+    pub fn size(&self) -> u32 {
+        let size = match self.signature {
+            SignedBlobHeaderSignature::Rsa4096Sha1(_) => 512,
+            SignedBlobHeaderSignature::Rsa2048Sha1(_) => 256,
+            SignedBlobHeaderSignature::EcdsaSha1(_) => 60,
+            SignedBlobHeaderSignature::Rsa4096Sha256(_) => 512,
+            SignedBlobHeaderSignature::Rsa2048Sha256(_) => 256,
+            SignedBlobHeaderSignature::EcdsaSha256(_) => 60,
+            SignedBlobHeaderSignature::HmacSha1(_) => 20,
+        } + 68;
+
+        util::align_to_boundary(size, 64) as u32
+    }
 }
 
 #[derive(Error, Debug)]
+#[allow(missing_docs)]
 pub enum SignedBlobHeaderError {
     #[error("IO error: {0}")]
     IoError(#[from] io::Error),
@@ -80,7 +96,7 @@ pub enum SignedBlobHeaderSignature {
 }
 
 impl SignedBlobHeaderSignature {
-    fn new<T: Read>(stream: &mut T) -> Result<Self, SignedBlobHeaderError> {
+    fn new<T: Read>(mut stream: T) -> Result<Self, SignedBlobHeaderError> {
         Ok(match stream.read_u32::<BE>()? {
             0x010000 => {
                 let buf = util::read_exact!(stream, 512)?;
@@ -121,7 +137,7 @@ impl SignedBlobHeaderSignature {
         })
     }
 
-    fn dump<T: Write>(&self, stream: &mut T) -> io::Result<()> {
+    fn dump<T: Write>(&self, mut stream: T) -> io::Result<()> {
         match self {
             Self::Rsa4096Sha1(data) => {
                 stream.write_u32::<BE>(0x010000)?;

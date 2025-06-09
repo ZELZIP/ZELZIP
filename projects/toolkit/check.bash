@@ -14,7 +14,7 @@ shellcheck ./**/*.bash
 gotre::log::info "Checking formating in Bash script files"
 shfmt --diff ./**/*.bash
 
-gotre::log::info "Checking Nix files sematics"
+gotre::log::info "Checking Nix files semantics"
 nix flake check ./projects/toolkit --all-systems
 
 gotre::log::info "Checking Nix files formatting"
@@ -26,9 +26,9 @@ prettier . --check
 gotre::log::info "Checking TOML files"
 taplo format --check
 
-gotre::log::info "Checking Rust files sematics"
-cargo clippy
-cargo check-all-features
+gotre::log::info "Checking Rust files semantics"
+RUSTFLAGS="-D warnings" cargo clippy
+RUSTFLAGS="-D warnings" cargo check-all-features
 
 gotre::log::info "Checking Rust files formatting"
 cargo fmt --check

@@ -18,7 +18,7 @@ pub struct CertificateChain {
 impl CertificateChain {
     /// Create a new certificate chain.
     pub fn new<T: Read + Seek>(
-        stream: &mut T,
+        stream: T,
         number_of_certificates: usize,
     ) -> Result<Self, CertificateChainError> {
         let mut stream = StreamPin::new(stream)?;
@@ -33,7 +33,7 @@ impl CertificateChain {
     }
 
     /// Dump the certificate chain into a stream.
-    pub fn dump<T: Write + Seek>(&self, stream: &mut T) -> io::Result<()> {
+    pub fn dump<T: Write + Seek>(&self, stream: T) -> io::Result<()> {
         let mut stream = StreamPin::new(stream)?;
 
         for certificate in &self.certificates {
@@ -43,9 +43,17 @@ impl CertificateChain {
 
         Ok(())
     }
+
+    /// Get the sizes of the certificate chain in bytes.
+    pub fn size(&self) -> u32 {
+        self.certificates
+            .iter()
+            .fold(0, |accumulator, current| accumulator + current.size())
+    }
 }
 
 #[derive(Error, Debug)]
+#[allow(missing_docs)]
 pub enum CertificateChainError {
     #[error("IO error: {0}")]
     IoError(#[from] io::Error),
@@ -79,8 +87,8 @@ pub struct Certificate {
 
 impl Certificate {
     /// Create a new certificate.
-    pub fn new<T: Read + Seek>(stream: &mut T) -> Result<Self, CertificateChainError> {
-        let signed_blob_header = SignedBlobHeader::new(stream)?;
+    pub fn new<T: Read + Seek>(mut stream: T) -> Result<Self, CertificateChainError> {
+        let signed_blob_header = SignedBlobHeader::new(&mut stream)?;
 
         let key_value_kind_identifier = stream.read_u32::<BigEndian>()?;
 
@@ -88,7 +96,7 @@ impl Certificate {
 
         let key = CertificateKey {
             id: stream.read_u32::<BigEndian>()?,
-            value: CertificateKeyValue::new(key_value_kind_identifier, stream)?,
+            value: CertificateKeyValue::new(key_value_kind_identifier, &mut stream)?,
         };
 
         Ok(Self {
@@ -99,15 +107,27 @@ impl Certificate {
     }
 
     /// Dump the certificate chain into a stream.
-    pub fn dump<T: Write + Seek>(&self, stream: &mut T) -> io::Result<()> {
-        self.signed_blob_header.dump(stream)?;
+    pub fn dump<T: Write + Seek>(&self, mut stream: T) -> io::Result<()> {
+        self.signed_blob_header.dump(&mut stream)?;
 
-        self.key.value.dump_kind_identifier(stream)?;
+        self.key.value.dump_kind_identifier(&mut stream)?;
         stream.write_bytes_padded(self.identity.as_bytes(), 64)?;
         stream.write_u32::<BigEndian>(self.key.id)?;
-        self.key.value.dump_value(stream)?;
+        self.key.value.dump_value(&mut stream)?;
 
         Ok(())
+    }
+
+    /// Get the sizes of the certificate in bytes.
+    pub fn size(&self) -> u32 {
+        let size = match self.key.value {
+            CertificateKeyValue::Rsa4096(_) => 512,
+            CertificateKeyValue::Rsa2048(_) => 256,
+            CertificateKeyValue::EccB223(_) => 60,
+        } + self.signed_blob_header.size()
+            + 72;
+
+        util::align_to_boundary(size as u64, 64) as u32
     }
 }
 
@@ -131,7 +151,7 @@ pub enum CertificateKeyValue {
 }
 
 impl CertificateKeyValue {
-    fn new<T: Read + Seek>(identifier: u32, stream: &mut T) -> Result<Self, CertificateChainError> {
+    fn new<T: Read + Seek>(identifier: u32, mut stream: T) -> Result<Self, CertificateChainError> {
         let public_key = match identifier {
             0 => {
                 let buf = util::read_exact!(stream, 512 + 4)?;
@@ -152,7 +172,7 @@ impl CertificateKeyValue {
         Ok(public_key)
     }
 
-    pub fn dump_kind_identifier<T: Write>(&self, stream: &mut T) -> io::Result<()> {
+    pub fn dump_kind_identifier<T: Write>(&self, mut stream: T) -> io::Result<()> {
         stream.write_u32::<BigEndian>(match self {
             Self::Rsa4096(_) => 0,
             Self::Rsa2048(_) => 1,
@@ -162,7 +182,7 @@ impl CertificateKeyValue {
         Ok(())
     }
 
-    pub fn dump_value<T: Write>(&self, stream: &mut T) -> io::Result<()> {
+    pub fn dump_value<T: Write>(&self, mut stream: T) -> io::Result<()> {
         match self {
             Self::Rsa4096(value) => stream.write_all(value.as_slice())?,
             Self::Rsa2048(value) => stream.write_all(value.as_slice())?,

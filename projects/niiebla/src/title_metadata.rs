@@ -87,8 +87,8 @@ pub struct TitleMetadata {
 
 impl TitleMetadata {
     /// Create a new installable Wad representation.
-    pub fn new<T: Read + Seek>(stream: &mut T) -> Result<Self, TitleMetadataError> {
-        let signed_blob_header = SignedBlobHeader::new(stream)?;
+    pub fn new<T: Read + Seek>(mut stream: T) -> Result<Self, TitleMetadataError> {
+        let signed_blob_header = SignedBlobHeader::new(&mut stream)?;
 
         // TODO(IMPLEMENT): Add support for v1.
         let _format_version = stream.read_u8()?;
@@ -154,7 +154,7 @@ impl TitleMetadata {
         let mut content_chunk_entries = Vec::new();
 
         for _ in 0..number_of_content_entries {
-            content_chunk_entries.push(TitleMetadataContentEntry::new(stream)?);
+            content_chunk_entries.push(TitleMetadataContentEntry::new(&mut &mut stream)?);
         }
 
         let version_1_extension = None;
@@ -176,8 +176,8 @@ impl TitleMetadata {
     }
 
     /// Dump into a stream.
-    pub fn dump<T: Write + Seek>(&self, stream: &mut T) -> io::Result<()> {
-        self.signed_blob_header.dump(stream)?;
+    pub fn dump<T: Write + Seek>(&self, mut stream: T) -> io::Result<()> {
+        self.signed_blob_header.dump(&mut stream)?;
         stream.write_bool(self.version_1_extension.is_some())?;
         stream.write_u8(self.certificate_authority_certificate_revocation_list_version)?;
         stream.write_u8(self.signer_certificate_revocation_list_version)?;
@@ -200,11 +200,11 @@ impl TitleMetadata {
 
         match &self.system_runtime_title_id {
             None => stream.write_u8(0)?,
-            Some(title_id) => title_id.dump(stream)?,
+            Some(title_id) => title_id.dump(&mut stream)?,
         };
 
-        self.title_id.dump(stream)?;
-        self.platform_data.dump_identifier(stream)?;
+        self.title_id.dump(&mut stream)?;
+        self.platform_data.dump_identifier(&mut stream)?;
         stream.write_u16::<BigEndian>(self.group_id)?;
 
         match &self.platform_data {
@@ -220,7 +220,7 @@ impl TitleMetadata {
             } => {
                 stream.write_zeroed(2)?;
 
-                region.dump_identifier(stream)?;
+                region.dump_identifier(&mut stream)?;
 
                 stream.write_all(ratings)?;
                 stream.write_zeroed(12)?;
@@ -238,7 +238,7 @@ impl TitleMetadata {
         stream.seek_relative(2)?;
 
         for content_entry in &self.content_chunk_entries {
-            content_entry.dump(stream)?;
+            content_entry.dump(&mut stream)?;
         }
 
         Ok(())
@@ -276,9 +276,25 @@ impl TitleMetadata {
 
         Err(TitleMetadataError::ActionInvalid())
     }
+
+    /// Get the sizes of the title metadata in bytes.
+    pub fn size(&self) -> u32 {
+        let size = 100
+            + self.signed_blob_header.size()
+            + (16 + 20) * self.content_chunk_entries.len() as u32;
+
+        if let Some(_data) = self.version_1_extension {
+            // TODO(IMPROVE): Support for v1 TMDs. REMEMBER TO CHANGE 20 to 32(?) on v1 chunk
+            // entries.
+            panic!();
+        };
+
+        size
+    }
 }
 
 #[derive(Error, Debug)]
+#[allow(missing_docs)]
 pub enum TitleMetadataError {
     #[error("An IO error has occurred: {0}")]
     IoError(#[from] io::Error),
@@ -337,7 +353,7 @@ impl TitleMetadataPlatformData {
         }
     }
 
-    fn dump_identifier<T: Write>(&self, stream: &mut T) -> io::Result<()> {
+    fn dump_identifier<T: Write>(&self, mut stream: T) -> io::Result<()> {
         stream.write_u32::<BigEndian>(match self {
             Self::IQueNetCard => 0,
 
@@ -377,7 +393,7 @@ impl TitleMetadataPlatformDataWiiRegion {
         }
     }
 
-    fn dump_identifier<T: Write>(&self, stream: &mut T) -> io::Result<()> {
+    fn dump_identifier<T: Write>(&self, mut stream: T) -> io::Result<()> {
         stream.write_u16::<BigEndian>(match &self {
             Self::Japan => 0,
             Self::USA => 1,
@@ -430,7 +446,7 @@ impl TitleMetadataContentEntry {
     /// # Safety
     /// The given buffer is assumed to be from an title metadata content entry,
     /// the current position of the Seek pointer is taken as the start.
-    pub fn new<T: Read + Seek>(stream: &mut T) -> Result<Self, TitleMetadataError> {
+    pub fn new<T: Read + Seek>(mut stream: T) -> Result<Self, TitleMetadataError> {
         let id = stream.read_u32::<BigEndian>()?;
         let index = stream.read_u16::<BigEndian>()?;
 
@@ -456,7 +472,7 @@ impl TitleMetadataContentEntry {
         })
     }
 
-    fn dump<T: Write>(&self, stream: &mut T) -> io::Result<()> {
+    fn dump<T: Write>(&self, mut stream: T) -> io::Result<()> {
         stream.write_u32::<BigEndian>(self.id)?;
         stream.write_u16::<BigEndian>(self.index)?;
 

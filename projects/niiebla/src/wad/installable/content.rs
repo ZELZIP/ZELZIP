@@ -16,9 +16,9 @@ impl InstallableWad {
     ) -> Result<View<T>, InstallableWadError> {
         // The header is always aligned to the boundary
         let mut content_offset = Self::HEADER_SIZE
-            + Self::align(self.certificate_chain_size)
-            + Self::align(self.ticket_size)
-            + Self::align(self.title_metadata_size);
+            + Self::align_u64(self.certificate_chain_size)
+            + Self::align_u64(self.ticket_size)
+            + Self::align_u64(self.title_metadata_size);
 
         let title_metadata = self.title_metadata(&mut stream)?;
 

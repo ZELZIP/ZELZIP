@@ -43,6 +43,7 @@
 
             ## Markdown
             marksman
+            glow
 
             ## Bash
             bash-language-server
@@ -54,7 +55,7 @@
 
             ## Rust
             fenix.complete.toolchain
-	    cargo-all-features
+            cargo-all-features
 
             ## YAML, TS, JS, HTML, CSS, JSON, Markdown
             nodePackages.prettier

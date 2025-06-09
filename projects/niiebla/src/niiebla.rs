@@ -10,4 +10,7 @@ pub mod title_metadata;
 pub mod wad;
 pub mod wii_common_key;
 
+pub use certificate_chain::CertificateChain;
+pub use ticket::PreSwitchTicket;
+pub use title_metadata::TitleMetadata;
 pub use wad::Wad;

@@ -25,6 +25,7 @@ pub enum Wad {
 }
 
 #[derive(Error, Debug)]
+#[allow(missing_docs)]
 pub enum WadError {
     #[error("An IO error has occurred: {0}")]
     IoError(#[from] io::Error),
@@ -41,7 +42,7 @@ pub enum WadError {
 
 impl Wad {
     /// Create a new [Wad] by parsing a stream.
-    pub fn new<T: Read + Seek>(stream: &mut T) -> Result<Self, WadError> {
+    pub fn new<T: Read + Seek>(mut stream: T) -> Result<Self, WadError> {
         let mut magic_numbers_buffer = [0; 8];
         stream.read_exact(&mut magic_numbers_buffer)?;
 
@@ -49,9 +50,9 @@ impl Wad {
         stream.rewind()?;
 
         match magic_numbers_buffer {
-            INSTALLABLE_WAD_MAGIC_NUMBERS => {
-                Ok(Self::Installable(unsafe { InstallableWad::new(stream)? }))
-            }
+            INSTALLABLE_WAD_MAGIC_NUMBERS => Ok(Self::Installable(unsafe {
+                InstallableWad::new(&mut stream)?
+            })),
 
             _ => Err(WadError::UnknownWadFormatError),
         }
@@ -59,7 +60,7 @@ impl Wad {
 
     /// Like [Self::new] but treats any format of WAD except the Installable ones as an
     /// error.
-    pub fn try_new_installable<T: Read + Seek>(stream: &mut T) -> Result<InstallableWad, WadError> {
+    pub fn try_new_installable<T: Read + Seek>(stream: T) -> Result<InstallableWad, WadError> {
         match Self::new(stream)? {
             Self::Installable(installable_wad) => Ok(installable_wad),
 
