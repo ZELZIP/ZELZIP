@@ -12,6 +12,7 @@ use std::io::{Seek, Write};
 use std::string::FromUtf8Error;
 use thiserror::Error;
 use util::Aes128CbcDec;
+use util::AesCbcStream;
 use util::WriteEx;
 
 /// Manifest data regard the ownership of a title and its permissions over the hardware.
@@ -263,6 +264,36 @@ impl PreSwitchTicket {
 
         // TODO(IMPROVE): Support for v1 ticket.
         panic!();
+    }
+
+    fn get_key_and_iv(
+        &self,
+        content_index: u16,
+    ) -> Result<([u8; 16], [u8; 16]), PreSwitchTicketError> {
+        let title_key = self.decrypt_title_key_wii_method();
+
+        // Add 14 trailing zeroed bytes to the IV
+        let mut iv = Vec::from(content_index.to_be_bytes());
+        iv.append(&mut Vec::from([0; 14]));
+
+        #[allow(clippy::expect_used)]
+        let iv: [u8; 16] = iv
+            .try_into()
+            .expect("Will never fail, the `content_index` is always 16 bits");
+
+        Ok((title_key, iv))
+    }
+
+    // TODO(IMPROVE): Proper multi platform support.
+    /// Get a decryptor of a content for the given stream.
+    pub fn cryptographic_stream_wii_method<T: Seek>(
+        &self,
+        stream: T,
+        content_index: u16,
+    ) -> Result<AesCbcStream<T>, PreSwitchTicketError> {
+        let (title_key, iv) = self.get_key_and_iv(content_index)?;
+
+        Ok(AesCbcStream::new(stream, title_key, iv)?)
     }
 }
 

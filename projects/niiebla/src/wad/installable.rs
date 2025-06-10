@@ -103,8 +103,8 @@ pub enum InstallableWadError {
     #[error("Title metadata error: {0}")]
     TitleMetadataError(#[from] TitleMetadataError),
 
-    #[error("The given content entry index doesn't exist: {0}")]
-    ContentEntryIndexDoesntExist(u16),
+    #[error("The given content entry phyisical position doesn't exist: {0}")]
+    ContentEntryPhysicalPositionDoesntExist(usize),
 }
 
 #[derive(Debug)]

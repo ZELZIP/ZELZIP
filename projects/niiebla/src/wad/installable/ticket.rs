@@ -10,8 +10,6 @@ impl InstallableWad {
         // The header is always aligned to the boundary
         let ticket_offset = Self::HEADER_SIZE + Self::align_u64(self.certificate_chain_size);
 
-        eprintln!("OFFSET: {ticket_offset}");
-
         stream.seek(SeekFrom::Start(ticket_offset))?;
         Ok(())
     }

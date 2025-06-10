@@ -34,7 +34,7 @@ cfg_if! {
         pub use view::View;
         pub use recall_view::RecallView;
         pub use stream_pin::StreamPin;
-        pub use aes::{Aes128CbcDec, AesCbcDecryptStream};
+        pub use aes::{Aes128CbcDec, AesCbcStream};
     }
 }
 
