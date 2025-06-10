@@ -17,15 +17,13 @@ fn main() {
         .open(first_arg)
         .unwrap();
 
-    let wad = Wad::try_new_installable(&mut wad_file).unwrap();
+    let mut wad = Wad::try_new_installable(&mut wad_file).unwrap();
     let ticket = wad.ticket(&mut wad_file).unwrap();
-    let mut content = wad.decrypted_content_view(&mut wad_file, 0).unwrap();
 
-    let mut decrypted_content = Vec::new();
-    content.read_to_end(&mut decrypted_content).unwrap();
+    let mut buf = Cursor::new(b"HELLO WORLD!");
 
-    let mut decrypted_content = Cursor::new(decrypted_content);
+    //let mut new_content = Cursor::new(b"HELLO WORLD!aaaa");
 
-    wad.write_content(&mut decrypted_content, &mut wad_file, 0, None, None)
+    wad.write_content_safe_file(&mut buf, &mut wad_file, 0, None, None)
         .unwrap();
 }

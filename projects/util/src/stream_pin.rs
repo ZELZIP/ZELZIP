@@ -47,7 +47,8 @@ impl<T: Write + Seek> StreamPin<T> {
     /// Align the position of the stream relative to the pinned position and fill the intermediate
     /// bytes with zeroes.
     pub fn align_zeroed(&mut self, boundary: u64) -> io::Result<()> {
-        let relative_position = self.stream_position()? - self.start_position;
+        let relative_position = self.stream_position()?.abs_diff(self.start_position);
+
         let aligned_position = crate::align_to_boundary(relative_position, boundary);
 
         self.write_zeroed((aligned_position - relative_position) as usize)?;
@@ -83,6 +84,8 @@ mod tests {
     use super::*;
     use byteorder::ReadBytesExt;
     use std::io::Cursor;
+
+    // TODO(IMPLEMENT): Tests for going behind.
 
     #[test]
     fn test_go_to_pin() {

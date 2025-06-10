@@ -14,7 +14,7 @@ impl InstallableWad {
         Ok(())
     }
 
-    /// Crate a [View] into the ticket stored inside the WAD stream.
+    /// Create a [View] into the ticket stored inside the WAD stream.
     pub fn ticket_view<T: Read + Seek>(
         &self,
         mut stream: T,
