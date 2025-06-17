@@ -24,6 +24,6 @@ fn main() {
 
     //let mut new_content = Cursor::new(b"HELLO WORLD!aaaa");
 
-    wad.write_content_safe_file(&mut buf, &mut wad_file, 0, None, None)
-        .unwrap();
+    //wad.write_content_safe_file(&mut buf, &mut wad_file, 0, None, None)
+    //.unwrap();
 }

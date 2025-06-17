@@ -1,6 +1,6 @@
 # TODO (Global)
 
-- Add Docusarius
+- Add vitepress
   - Document scripting system
     - Prefixes
     - Nix devShell
@@ -12,3 +12,5 @@
     - Mention maybe future tool
   - dirty directory
 - TODO comments analyzer tool
+- Age limit breaker
+- U8
