@@ -63,7 +63,6 @@ pub struct TitleMetadata {
 
     /// Bitflags of access right to the hardware, its meaning depends on the platform, the access
     /// to this entry is recommended to use platform aware methods like [Self::has_ppc_access] or [Self::has_dvd_access].
-    // TODO(IMPLEMENT): Per platform methods.
     pub access_rights: u32,
 
     /// The version of the title.
@@ -93,6 +92,8 @@ impl TitleMetadata {
         // TODO(IMPLEMENT): Add support for v1.
         let _format_version = stream.read_u8()?;
 
+        println!("EOEOEOOE: {_format_version}");
+
         let certificate_authority_certificate_revocation_list_version = stream.read_u8()?;
         let signer_certificate_revocation_list_version = stream.read_u8()?;
 
@@ -113,6 +114,11 @@ impl TitleMetadata {
 
         match platform_data {
             TitleMetadataPlatformData::IQueNetCard => {
+                stream.seek_relative(62)?;
+            }
+
+            // TODO(IMPLEMENT): Full 3DS support
+            TitleMetadataPlatformData::Console3ds => {
                 stream.seek_relative(62)?;
             }
 
@@ -182,8 +188,10 @@ impl TitleMetadata {
         stream.write_u8(self.certificate_authority_certificate_revocation_list_version)?;
         stream.write_u8(self.signer_certificate_revocation_list_version)?;
 
+        // Weird reserved byte that only has meaning on the Wii
         stream.write_u8(match self.platform_data {
             TitleMetadataPlatformData::IQueNetCard => 0,
+            TitleMetadataPlatformData::Console3ds => 0,
             TitleMetadataPlatformData::Wii {
                 is_wii_u_vwii_only_title,
                 region: _,
@@ -209,6 +217,11 @@ impl TitleMetadata {
 
         match &self.platform_data {
             TitleMetadataPlatformData::IQueNetCard => {
+                stream.write_zeroed(62)?;
+            }
+
+            // TODO(IMPLEMENT): Full 3DS support
+            TitleMetadataPlatformData::Console3ds => {
                 stream.write_zeroed(62)?;
             }
 
@@ -244,8 +257,8 @@ impl TitleMetadata {
         Ok(())
     }
 
-    /// If the title has access to the DVD drive. Only on Wii and Wii U platforms.
-    pub fn has_dvd_access(&self) -> Result<bool, TitleMetadataError> {
+    /// If the title has access to the DVD drive. Only on Wii (and Wii U vWii) platform.
+    pub fn has_dvd_access_wii(&self) -> Result<bool, TitleMetadataError> {
         // TODO(IMPLEMENT): Add support for Wii U.
         if let TitleMetadataPlatformData::Wii {
             is_wii_u_vwii_only_title: _,
@@ -261,9 +274,9 @@ impl TitleMetadata {
     }
 
     /// If the title has access to all hardware from its main PPC chip without using a IOS between
-    /// the comunication (aka disable the `AHBPROT` protection).
-    /// Only on Wii (and Wii U vWii) platforms.
-    pub fn has_ppc_access(&self) -> Result<bool, TitleMetadataError> {
+    /// the communication (aka disable the `AHBPROT` protection).
+    /// Only on Wii (and Wii U vWii) platform.
+    pub fn has_ppc_access_wii(&self) -> Result<bool, TitleMetadataError> {
         if let TitleMetadataPlatformData::Wii {
             is_wii_u_vwii_only_title: _,
             region: _,
@@ -325,30 +338,45 @@ pub enum TitleMetadataError {
 }
 
 #[derive(Debug)]
+/// Data relevant for the platform of the title.
 pub enum TitleMetadataPlatformData {
+    /// The title is for the never released iQue NetCard.
     IQueNetCard,
+
+    /// The title is for the Nintendo Wii.
     Wii {
         /// If the title is made to only run on Wii U vWii (The virtual Wii system inside the
         /// Nintendo Wii U).
         is_wii_u_vwii_only_title: bool,
 
+        /// The region of the title
         region: TitleMetadataPlatformDataWiiRegion,
+
+        /// The "ratings" of the title.
+        // TODO(IMPROVE): Understand this
         ratings: [u8; 16],
+
+        /// The IPC mask of the title.
+        // TODO(IMPROVE): Understand this
         ipc_mask: [u8; 12],
     },
+
+    /// The title is for the Nintendo 3DS
+    Console3ds,
     // TODO(IMPLEMENT): Support for DSi, 3DS and Wii U.
 }
 
 impl TitleMetadataPlatformData {
     fn new_dummy_from_identifier(identifier: u32) -> Result<Self, TitleMetadataError> {
         match identifier {
-            0x00000000 => Ok(Self::IQueNetCard),
-            0x00000001 => Ok(Self::Wii {
+            0 => Ok(Self::IQueNetCard),
+            1 => Ok(Self::Wii {
                 is_wii_u_vwii_only_title: false,
                 region: TitleMetadataPlatformDataWiiRegion::RegionFree,
                 ratings: [0; 16],
                 ipc_mask: [0; 12],
             }),
+            64 => Ok(Self::Console3ds),
             identifier => Err(TitleMetadataError::UnknownPlatform(identifier)),
         }
     }
@@ -363,6 +391,8 @@ impl TitleMetadataPlatformData {
                 ratings: _,
                 ipc_mask: _,
             } => 1,
+
+            Self::Console3ds => 64,
         })?;
 
         Ok(())
@@ -455,7 +485,9 @@ impl TitleMetadataContentEntry {
             0x4001 => TitleMetadataContentEntryKind::Dlc,
             0x8001 => TitleMetadataContentEntryKind::Shared,
 
-            identifier => return Err(TitleMetadataError::UnknownContentEntryKind(identifier)),
+            // TODO(IMPROVE): This is a hack, understand content types on 3DS
+            //identifier => return Err(TitleMetadataError::UnknownContentEntryKind(identifier)),
+            identifier => TitleMetadataContentEntryKind::Normal,
         };
 
         let size = stream.read_u64::<BigEndian>()?;

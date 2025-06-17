@@ -184,7 +184,7 @@ impl PreSwitchTicket {
         self.device_id.is_some()
     }
 
-    /// Decrypt the title key using the corrent common key, only works with Nintendo Wii titles.
+    /// Decrypt the title key using the correct common key, only works with Nintendo Wii titles.
     pub fn decrypt_title_key_wii_method(&self) -> [u8; 16] {
         let id = if self.is_device_unique() {
             self.ticket_id

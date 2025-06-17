@@ -9,7 +9,7 @@
     fenix.url = "github:nix-community/fenix";
     fenix.inputs.nixpkgs.follows = "nixpkgs";
 
-    toolkit.url = ./projects/toolkit;
+    toolkit.url = "./projects/toolkit";
     toolkit.inputs.nixpkgs.follows = "nixpkgs";
   };
 
@@ -17,6 +17,7 @@
     flake-parts.lib.mkFlake {inherit inputs;} ({...}: {
       systems = [
         "x86_64-linux"
+        "aarch64-darwin"
       ];
 
       perSystem = {
@@ -62,7 +63,7 @@
 
             # Apps
             ## Wii emulator
-            dolphin-emu
+            #dolphin-emu
 
             ## Logging and prompts for shell scripts
             gum
