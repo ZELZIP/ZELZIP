@@ -136,15 +136,14 @@
         ]
       },
       "locked": {
-        "lastModified": 1,
-        "narHash": "sha256-GIRxCnkbPOf9yoQKQrbgXb032MTPVX2j0JnboQrUg+4=",
-        "path": "/nix/store/ci2z7fbzcvcncxv4z2kvz7hp695y0d8x-source/projects/toolkit",
+        "path": "./projects/toolkit",
         "type": "path"
       },
       "original": {
-        "path": "/nix/store/ci2z7fbzcvcncxv4z2kvz7hp695y0d8x-source/projects/toolkit",
+        "path": "./projects/toolkit",
         "type": "path"
-      }
+      },
+      "parent": []
     }
   },
   "root": "root",

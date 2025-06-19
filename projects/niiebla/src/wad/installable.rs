@@ -25,7 +25,6 @@ pub struct InstallableWad {
     pub ticket_size: u32,
     pub title_metadata_size: u32,
     pub content_size: u32,
-    // TODO(IMPLEMENT): Support for footer info.
     pub footer_size: u32,
 }
 
@@ -105,6 +104,9 @@ pub enum InstallableWadError {
 
     #[error("The given content entry phyisical position doesn't exist: {0}")]
     ContentEntryPhysicalPositionDoesntExist(usize),
+
+    #[error("The given title is not for the Wii platform")]
+    NotAWiiTitle,
 }
 
 #[derive(Debug)]

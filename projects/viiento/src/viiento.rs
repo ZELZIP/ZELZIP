@@ -1,6 +1,6 @@
 //! TODO
 
-use niiebla::TitleMetadata;
+use niiebla::{TitleMetadata, Wad};
 use std::fs::{File, OpenOptions};
 use std::io;
 use std::io::{Cursor, Read, Write};
@@ -9,15 +9,14 @@ use std::path::PathBuf;
 #[allow(clippy::unwrap_used)]
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    let first_arg = &args[1];
 
-    let tmd_file = File::options()
+    let mut tik_file = File::options()
         .read(true)
         .write(true)
-        .open(first_arg)
+        .open(&args[1])
         .unwrap();
 
-    let tmd = TitleMetadata::new(tmd_file).unwrap();
+    let tik = niiebla::PreSwitchTicket::new(&tik_file).unwrap();
 
-    println!("{tmd:?}");
+    println!("{:?}", tik);
 }

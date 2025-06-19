@@ -13,4 +13,3 @@
   - dirty directory
 - TODO comments analyzer tool
 - Age limit breaker
-- U8

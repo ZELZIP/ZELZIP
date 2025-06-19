@@ -15,6 +15,9 @@ use util::Aes128CbcDec;
 use util::AesCbcStream;
 use util::WriteEx;
 
+mod v1;
+pub use v1::PreSwitchTitleV1ExtraData;
+
 /// Manifest data regard the ownership of a title and its permissions over the hardware.
 ///
 /// Only compatible with versions zero (V0) and one (V1), present on the Nintendo Wii, Wii U,
@@ -70,7 +73,7 @@ pub struct PreSwitchTicket {
     /// if the ID is valid or not.
     ///
     /// How this is useful (given that the ID is already hardcoded in the ticket) and where is has been used is still unknown.
-    // TODO(IMPROVE): Truly understand this.
+    // TODO(DISCOVER)
     pub permitted_generic_title_id_mask: u32,
 
     /// The license of the title.
@@ -81,19 +84,18 @@ pub struct PreSwitchTicket {
     pub common_key_kind_index: u8,
 
     /// Audit or revision of the title. The meaning is still not clear.
-    // TODO(IMPROVE): Understand this.
+    // TODO(DISCOVER)
     pub audit: u8,
 
     /// Set of bitflags regard if a content can be accessed (1) or not (0).
-    // TODO(IMPROVE): Understand what "limit access" this regulates.
+    // TODO(DISCOVER)
     pub content_access_permissions: [u8; 64],
 
     /// A set of limits over the use of the title.
     pub limit_entries: [PreSwitchTicketLimitEntry; 8],
 
     /// Extra data only present on the v1 version of a ticket.
-    // TODO(IMPLEMENT): Add support for v1 tickets.
-    version_1_extension: Option<()>,
+    version_1_extension: Option<v1::PreSwitchTitleV1ExtraData>,
 }
 
 impl PreSwitchTicket {
@@ -102,10 +104,7 @@ impl PreSwitchTicket {
         let signed_blob_header = SignedBlobHeader::new(&mut stream)?;
         let ecc_public_key = util::read_exact!(stream, 60)?;
 
-        // TODO(IMPLEMENT): This should change when V1 support is here. Also greater than v1 should
-        // error.
-        stream.seek_relative(1)?;
-        let version_1_extension = None;
+        let format_version = stream.read_u8()?;
 
         let certificate_authority_certificate_revocation_list_version = stream.read_u8()?;
         let signer_certificate_revocation_list_version = stream.read_u8()?;
@@ -156,6 +155,13 @@ impl PreSwitchTicket {
             )?;
         }
 
+        let version_1_extension = match format_version {
+            0 => None,
+            1 => Some(PreSwitchTitleV1ExtraData::new(&mut stream)?),
+
+            _ => return Err(PreSwitchTicketError::IncompatibleVersion(format_version)),
+        };
+
         Ok(Self {
             signed_blob_header,
             ecc_public_key,
@@ -185,7 +191,7 @@ impl PreSwitchTicket {
     }
 
     /// Decrypt the title key using the correct common key, only works with Nintendo Wii titles.
-    pub fn decrypt_title_key_wii_method(&self) -> [u8; 16] {
+    pub fn decrypt_title_key_wii_method(&self) -> Result<[u8; 16], PreSwitchTicketError> {
         let id = if self.is_device_unique() {
             self.ticket_id
         } else {
@@ -198,21 +204,14 @@ impl PreSwitchTicket {
             .try_into()
             .expect("Will never fail, the `id` slice has always a size of 8");
 
-        // TODO(IMPLEMENT): Add support all of the rest of encryption methods and remove this
-        // unwrap.
-        #[allow(clippy::unwrap_used)]
-        let common_key_kind = WiiCommonKeyKind::new(self.common_key_kind_index).unwrap();
+        let common_key_kind = WiiCommonKeyKind::new(self.common_key_kind_index)?;
         let cipher = Aes128CbcDec::new((&common_key_kind.bytes()).into(), &iv.into());
 
         let mut title_key = self.encrypted_title_key;
 
-        // TODO(IMPROVE): Too bad! Add proper error handling.
-        #[allow(clippy::unwrap_used)]
-        cipher
-            .decrypt_padded_mut::<NoPadding>(&mut title_key)
-            .unwrap();
+        cipher.decrypt_padded_mut::<NoPadding>(&mut title_key)?;
 
-        title_key
+        Ok(title_key)
     }
 
     /// Dump into a stream.
@@ -250,27 +249,29 @@ impl PreSwitchTicket {
             limit_entry.dump(&mut stream)?;
         }
 
-        // TODO(IMPLEMENT): v1 ticket dumping.
+        if let Some(version_1_extension) = &self.version_1_extension {
+            version_1_extension.dump(&mut stream)?;
+        }
 
         Ok(())
     }
 
     /// Get the sizes of the ticket in bytes.
     pub fn size(&self) -> u32 {
-        if self.version_1_extension.is_none() {
-            // Manually calculated value for v0 tickets
-            return 292 + self.signed_blob_header.size();
+        let mut size = 292 + self.signed_blob_header.size();
+
+        if let Some(version_1_extension) = &self.version_1_extension {
+            size += version_1_extension.size();
         }
 
-        // TODO(IMPROVE): Support for v1 ticket.
-        panic!();
+        size
     }
 
     fn get_key_and_iv(
         &self,
         content_index: u16,
     ) -> Result<([u8; 16], [u8; 16]), PreSwitchTicketError> {
-        let title_key = self.decrypt_title_key_wii_method();
+        let title_key = self.decrypt_title_key_wii_method()?;
 
         // Add 14 trailing zeroed bytes to the IV
         let mut iv = Vec::from(content_index.to_be_bytes());
@@ -284,7 +285,6 @@ impl PreSwitchTicket {
         Ok((title_key, iv))
     }
 
-    // TODO(IMPROVE): Proper multi platform support.
     /// Get a decryptor of a content for the given stream.
     pub fn cryptographic_stream_wii_method<T: Seek>(
         &self,
@@ -324,12 +324,18 @@ pub enum PreSwitchTicketError {
 
     #[error("Invalid license kind identifier value")]
     InvalidLicenseKindIdentifierValue(u8),
+
+    #[error("The version of the ticket is not compatible (version: {0})")]
+    IncompatibleVersion(u8),
+
+    #[error("Unable to do cryptographic operation over the data, padding error: {0}")]
+    CryptographicUnpadError(#[from] block_padding::UnpadError),
 }
 
 bitflags! {
     /// Bitflags that indicate if a content (given its content index) can be accessed by the
     /// "System App" (the meaning and consequences of this "System App" are not known yet).
-    // TODO(IMPROVE): Discover what the "System App" is.
+    // TODO(DISCOVER): What is a "System App"?
     #[derive(Debug)]
     pub struct PreSwitchTicketSystemAppContentAccessFlags: u16 {
         /// Content 0.
@@ -383,14 +389,14 @@ bitflags! {
 }
 
 /// The kind of license used in a ticket.
-// TODO(IMRPOVE): Maybe this can be understood as a "policy"?
+// TODO(DISCOVER): Maybe this can be understood as a "policy"?
 #[derive(Debug)]
 pub enum PreTicketLicense {
     /// The normal license of a Ticket.
     Normal,
 
     /// The ticket can be "exported".
-    // TODO(IMPROVE): Maybe to an external device?
+    // TODO(DISCOVER): Maybe to an external device?
     CanBeExported,
 }
 

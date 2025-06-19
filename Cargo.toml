@@ -15,10 +15,13 @@ thiserror = "2.0.12"
 byteorder = "1.5.0"
 aes = "0.8.4"
 cbc = { version = "0.1.2", features = ["std"] }
+block-padding = "0.3.3"
 util = { package = "gotre_util", path = "projects/util", features = ["std"] }
 niiebla = { path = "projects/niiebla" }
 cfg-if = "1.0.0"
 bitflags = "2.9.1"
+sha1 = "0.10.6"
+sha2 = "0.10.9"
 
 [workspace.lints.rust]
 "missing_docs" = "warn"

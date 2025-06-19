@@ -17,8 +17,7 @@ pub enum Wad {
     /// WAD that stores the data needed to install a title into the system.
     Installable(InstallableWad),
 
-    // TODO(IMPLEMENT) Support for backup wads
-    //   - Remember to also add a `try_backup` function
+    // NOTE: Remember to also add a `try_backup` function
     /// Kind of WAD that was used to store encrypted data safely into the SD card, used to store
     /// channels and downloadable content (DLCs).
     BackUp,

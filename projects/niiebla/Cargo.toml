@@ -13,9 +13,11 @@ thiserror.workspace = true
 byteorder.workspace = true
 aes.workspace = true
 cbc.workspace = true
+block-padding.workspace = true
 util.workspace = true
 cfg-if.workspace = true
 bitflags.workspace = true
+sha1.workspace = true
 
 [lints]
 workspace = true

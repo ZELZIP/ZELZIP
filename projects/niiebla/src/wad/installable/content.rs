@@ -1,8 +1,11 @@
+use crate::title_metadata::TitleMetadataContentEntryHashKind;
 use crate::wad::installable::{InstallableWad, InstallableWadError};
 use crate::{PreSwitchTicket, TitleMetadata};
+use sha1::{Digest, Sha1};
 use std::fs::File;
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use util::AesCbcStream;
+use util::sha::hash_stream_into_sha1;
 use util::{StreamPin, View, WriteEx};
 
 impl InstallableWad {
@@ -70,10 +73,11 @@ impl InstallableWad {
     /// The `title_metadata` entry will be updated with the correct hash and size and
     /// change the index and/or ID if requested.
     ///
-    /// Data after this content may be unaligned or overwritten. Using [Self::write_content_safe]
+    /// Data after this content may be unaligned or overwritten. Using
+    /// [Self::write_content_safe_wii] or [Self::write_content_safe_file_wii]
     /// may be preferred.
     #[allow(clippy::too_many_arguments)]
-    pub fn write_content_raw<T: Read, S: Read + Write + Seek>(
+    pub fn write_content_raw_wii<T: Read, S: Read + Write + Seek>(
         &mut self,
         mut new_data: T,
         stream: S,
@@ -85,8 +89,9 @@ impl InstallableWad {
     ) -> Result<(), InstallableWadError> {
         let mut stream = StreamPin::new(stream)?;
 
-        let mut new_data_loaded = vec![];
-        new_data.read_to_end(&mut new_data_loaded)?;
+        let mut new_data_vec = vec![];
+        new_data.read_to_end(&mut new_data_vec)?;
+        let mut new_data = new_data_vec;
 
         let content_chunk_entry = &mut title_metadata.content_chunk_entries[physical_position];
 
@@ -98,14 +103,21 @@ impl InstallableWad {
             content_chunk_entry.id = id;
         }
 
-        content_chunk_entry.size = new_data_loaded.len() as u64;
+        content_chunk_entry.size = new_data.len() as u64;
 
-        new_data_loaded.write_zeroed(
+        content_chunk_entry.hash = match content_chunk_entry.hash {
+            TitleMetadataContentEntryHashKind::Version0(_) => {
+                TitleMetadataContentEntryHashKind::Version0(Sha1::digest(&new_data).into())
+            }
+            TitleMetadataContentEntryHashKind::Version1(_) => {
+                return Err(InstallableWadError::NotAWiiTitle);
+            }
+        };
+
+        new_data.write_zeroed(
             (util::align_to_boundary(content_chunk_entry.size, 16) - content_chunk_entry.size)
                 as usize,
         )?;
-
-        // TODO(IMPLEMENT): Calculate hash for new content.
 
         self.write_title_metadata(title_metadata, &mut stream)?;
 
@@ -116,17 +128,17 @@ impl InstallableWad {
             title_metadata.content_chunk_entries[physical_position].index,
         )?;
 
-        stream.write(&new_data_loaded)?;
+        stream.write(&new_data)?;
 
         stream.into_inner().align_zeroed(64)?;
 
         Ok(())
     }
 
-    /// Like [Self::write_content_raw] but will make a in-memory copy off all the trailing data to
+    /// Like [Self::write_content_raw_wii] but will make a in-memory copy off all the trailing data to
     /// realign it.
     #[allow(clippy::too_many_arguments)]
-    pub fn write_content_safe<T: Read, S: Read + Write + Seek>(
+    pub fn write_content_safe_wii<T: Read, S: Read + Write + Seek>(
         &mut self,
         new_data: T,
         stream: S,
@@ -150,7 +162,7 @@ impl InstallableWad {
             trailing_content_bytes.push(content_bytes);
         }
 
-        self.write_content_raw(
+        self.write_content_raw_wii(
             new_data,
             &mut stream,
             ticket,
@@ -168,22 +180,22 @@ impl InstallableWad {
         Ok(())
     }
 
-    /// Like [Self::write_content_safe] but will also trim the size of the file to avoid garbage
+    /// Like [Self::write_content_safe_wii] but will also trim the size of the file to avoid garbage
     /// data or useless zeroes.
     #[allow(clippy::too_many_arguments)]
-    pub fn write_content_safe_file<T: Read>(
+    pub fn write_content_safe_file_wii<T: Read>(
         &mut self,
         new_data: T,
-        file: &mut File,
+        wad_file: &mut File,
         ticket: &PreSwitchTicket,
         title_metadata: &mut TitleMetadata,
         physical_position: usize,
         new_index: Option<u16>,
         new_id: Option<u32>,
     ) -> Result<(), InstallableWadError> {
-        let mut file = StreamPin::new(file)?;
+        let mut file = StreamPin::new(wad_file)?;
 
-        self.write_content_safe(
+        self.write_content_safe_wii(
             new_data,
             &mut file,
             ticket,
