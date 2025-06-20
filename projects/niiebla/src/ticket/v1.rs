@@ -20,8 +20,8 @@ use crate::ticket::PreSwitchTicketError;
 
 #[derive(Debug)]
 pub struct PreSwitchTicketV1ExtraData {
-    sections: Vec<PreSwitchTicketV1ExtraDataSection>,
-    flags: u32,
+    pub sections: Vec<PreSwitchTicketV1ExtraDataSection>,
+    pub flags: u32,
 }
 
 impl PreSwitchTicketV1ExtraData {
@@ -156,8 +156,8 @@ pub enum PreSwitchTicketV1Error {
 
 #[derive(Debug)]
 pub struct PreSwitchTicketV1ExtraDataSection {
-    records: PreSwitchTicketV1ExtraDataRecords,
-    flags: u16,
+    pub records: PreSwitchTicketV1ExtraDataRecords,
+    pub flags: u16,
 }
 
 #[derive(Debug)]
@@ -323,8 +323,8 @@ impl PreSwitchTicketV1ExtraDataSection {
 #[derive(Debug)]
 // TODO(DISCOVER)
 pub struct PreSwitchTicketV1ExtraDataRefereceId {
-    id: [u8; 16],
-    attributes: u32,
+    pub id: [u8; 16],
+    pub attributes: u32,
 }
 
 impl PreSwitchTicketV1ExtraDataRefereceId {
@@ -348,42 +348,42 @@ impl PreSwitchTicketV1ExtraDataRefereceId {
 #[derive(Debug)]
 // TODO(DISCOVER)
 pub struct PreSwitchTicketV1ExtraDataRecordPermanent {
-    reference_id: PreSwitchTicketV1ExtraDataRefereceId,
+    pub reference_id: PreSwitchTicketV1ExtraDataRefereceId,
 }
 
 #[derive(Debug)]
 // TODO(DISCOVER)
 pub struct PreSwitchTicketV1ExtraDataRecordSubscription {
-    expiration_time: u32,
-    reference_id: PreSwitchTicketV1ExtraDataRefereceId,
+    pub expiration_time: u32,
+    pub reference_id: PreSwitchTicketV1ExtraDataRefereceId,
 }
 
 #[derive(Debug)]
 // TODO(DISCOVER)
 pub struct PreSwitchTicketV1ExtraDataRecordContent {
     // TODO(DISCOVER)
-    offset_content_index: u32,
+    pub offset_content_index: u32,
 
     // TODO(DISCOVER)
-    access_mask: [u8; 128],
+    pub access_mask: [u8; 128],
 }
 
 #[derive(Debug)]
 // TODO(DISCOVER)
 pub struct PreSwitchTicketV1ExtraDataRecordContentConsumption {
     // TODO(DISCOVER)
-    content_index: u16,
+    pub content_index: u16,
 
     // TODO(DISCOVER)
-    limit_code: u16,
+    pub limit_code: u16,
 
     // TODO(DISCOVER)
-    limit_value: u32,
+    pub limit_value: u32,
 }
 
 #[derive(Debug)]
 // TODO(DISCOVER)
 pub struct PreSwitchTicketV1ExtraDataRecordAccessTitle {
-    title_id: TitleId,
-    title_mask: u64,
+    pub title_id: TitleId,
+    pub title_mask: u64,
 }

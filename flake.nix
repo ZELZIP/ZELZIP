@@ -71,6 +71,8 @@
             ripgrep
 
             inputs'.toolkit.packages.default
+
+	    openssl
           ];
         };
       };

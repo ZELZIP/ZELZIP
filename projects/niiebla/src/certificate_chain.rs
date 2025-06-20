@@ -1,7 +1,7 @@
 //! Implementation of the binary file format used by Nintendo to store certificate chains.
 
 use crate::signed_blob_header::{SignedBlobHeader, SignedBlobHeaderError};
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{BE, ReadBytesExt, WriteBytesExt};
 use std::io::{self, Read, Seek, Write};
 use std::string::FromUtf8Error;
 use thiserror::Error;
@@ -90,12 +90,12 @@ impl Certificate {
     pub fn new<T: Read + Seek>(mut stream: T) -> Result<Self, CertificateChainError> {
         let signed_blob_header = SignedBlobHeader::new(&mut stream)?;
 
-        let key_value_kind_identifier = stream.read_u32::<BigEndian>()?;
+        let key_value_kind_identifier = stream.read_u32::<BE>()?;
 
         let identity = util::read_string!(stream, 64)?;
 
         let key = CertificateKey {
-            id: stream.read_u32::<BigEndian>()?,
+            id: stream.read_u32::<BE>()?,
             value: CertificateKeyValue::new(key_value_kind_identifier, &mut stream)?,
         };
 
@@ -112,7 +112,7 @@ impl Certificate {
 
         self.key.value.dump_kind_identifier(&mut stream)?;
         stream.write_bytes_padded(self.identity.as_bytes(), 64)?;
-        stream.write_u32::<BigEndian>(self.key.id)?;
+        stream.write_u32::<BE>(self.key.id)?;
         self.key.value.dump_value(&mut stream)?;
 
         Ok(())
@@ -173,7 +173,7 @@ impl CertificateKeyValue {
     }
 
     pub fn dump_kind_identifier<T: Write>(&self, mut stream: T) -> io::Result<()> {
-        stream.write_u32::<BigEndian>(match self {
+        stream.write_u32::<BE>(match self {
             Self::Rsa4096(_) => 0,
             Self::Rsa2048(_) => 1,
             Self::EccB223(_) => 2,

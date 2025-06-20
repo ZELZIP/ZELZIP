@@ -1,5 +1,8 @@
 use crate::certificate_chain::{CertificateChain, CertificateChainError};
 use crate::wad::InstallableWad;
+use crate::wad::InstallableWadError;
+use crate::{PreSwitchTicket, TitleMetadata};
+use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 use util::{StreamPin, View};
 
@@ -36,7 +39,12 @@ impl InstallableWad {
     }
 
     /// Write a new certificate chain into the stream of a WAD.
-    pub fn write_certificate_chain<T: Write + Seek>(
+    ///
+    /// # Safety
+    /// Data after the certificate chain (ticket, title metadata and content blobs) may be unaligned or overwritten. Using
+    /// [Self::write_certificate_chain_safe] or [Self::write_certificate_chain_safe_file]
+    /// may be preferred.
+    pub unsafe fn write_certificate_chain_raw<T: Write + Seek>(
         &mut self,
         new_certificate_chain: &CertificateChain,
         stream: T,
@@ -52,6 +60,52 @@ impl InstallableWad {
 
         stream.rewind()?;
         self.dump(stream)?;
+
+        Ok(())
+    }
+
+    /// Like [Self::write_certificate_chain_raw] but will make a in-memory copy off all the trailing data to
+    /// realign it.
+    pub fn write_certificate_chain_safe<T: Read + Write + Seek>(
+        &mut self,
+        mut stream: T,
+        new_certificate_chain: &CertificateChain,
+        ticket: &PreSwitchTicket,
+        title_metadata: &TitleMetadata,
+    ) -> Result<(), InstallableWadError> {
+        let mut stream = StreamPin::new(stream)?;
+
+        let contents = self.store_contents(&mut stream, title_metadata, 0)?;
+
+        unsafe {
+            self.write_certificate_chain_raw(new_certificate_chain, &mut stream)?;
+            self.write_ticket_raw(ticket, &mut stream)?;
+            self.write_title_metadata_raw(title_metadata, &mut stream)?;
+        }
+
+        self.restore_contents(&mut stream, title_metadata, &contents);
+
+        Ok(())
+    }
+
+    /// Like [Self::write_certificate_chain_safe] but will also trim the size of the file to avoid garbage
+    /// data or useless zeroes.
+    pub fn write_certificate_chain_safe_file(
+        &mut self,
+        file: &mut File,
+        new_certificate_chain: &CertificateChain,
+        ticket: &PreSwitchTicket,
+        title_metadata: &TitleMetadata,
+    ) -> Result<(), InstallableWadError> {
+        self.write_certificate_chain_safe(
+            &mut *file,
+            new_certificate_chain,
+            ticket,
+            title_metadata,
+        )?;
+
+        let new_file_size = file.stream_position()?;
+        file.set_len(new_file_size)?;
 
         Ok(())
     }

@@ -15,8 +15,7 @@ use util::Aes128CbcDec;
 use util::AesCbcStream;
 use util::WriteEx;
 
-mod v1;
-pub use v1::PreSwitchTicketV1ExtraData;
+pub mod v1;
 
 /// Manifest data regard the ownership of a title and its permissions over the hardware.
 ///
@@ -95,7 +94,7 @@ pub struct PreSwitchTicket {
     pub limit_entries: [PreSwitchTicketLimitEntry; 8],
 
     /// Extra data only present on the v1 version of a ticket.
-    version_1_extension: Option<v1::PreSwitchTicketV1ExtraData>,
+    pub version_1_extension: Option<v1::PreSwitchTicketV1ExtraData>,
 }
 
 impl PreSwitchTicket {
@@ -157,7 +156,7 @@ impl PreSwitchTicket {
 
         let version_1_extension = match format_version {
             0 => None,
-            1 => Some(PreSwitchTicketV1ExtraData::new(&mut stream)?),
+            1 => Some(v1::PreSwitchTicketV1ExtraData::new(&mut stream)?),
 
             _ => return Err(PreSwitchTicketError::IncompatibleVersion(format_version)),
         };

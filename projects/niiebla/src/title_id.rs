@@ -1,6 +1,6 @@
 //! Implementation of a newtype wrapper around the title ID of a title.
 
-use byteorder::{BigEndian, WriteBytesExt};
+use byteorder::{BE, WriteBytesExt};
 use std::fmt::{self, Display};
 use std::io;
 use std::io::Write;
@@ -30,7 +30,7 @@ impl TitleId {
 
     /// Dump a title ID into a stream.
     pub fn dump<T: Write>(&self, mut stream: T) -> io::Result<()> {
-        stream.write_u64::<BigEndian>(self.0)?;
+        stream.write_u64::<BE>(self.0)?;
 
         Ok(())
     }

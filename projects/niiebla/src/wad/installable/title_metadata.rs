@@ -1,5 +1,7 @@
 use crate::title_metadata::{TitleMetadata, TitleMetadataError};
 use crate::wad::InstallableWad;
+use crate::wad::InstallableWadError;
+use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 use util::{StreamPin, View};
 
@@ -36,7 +38,12 @@ impl InstallableWad {
     }
 
     /// Write a new title metadata into the stream of a WAD.
-    pub fn write_title_metadata<T: Write + Seek>(
+    ///
+    /// # Safety
+    /// Data after the title metedata (the content blobs) may be unaligned or overwritten. Using
+    /// [Self::write_title_metadata_safe] or [Self::write_title_metadata_safe_file]
+    /// may be preferred.
+    pub unsafe fn write_title_metadata_raw<T: Write + Seek>(
         &mut self,
         new_title_metadata: &TitleMetadata,
         stream: T,
@@ -52,6 +59,47 @@ impl InstallableWad {
 
         stream.rewind()?;
         self.dump(stream)?;
+
+        Ok(())
+    }
+
+    /// Like [Self::write_title_metadata_raw] but will make a in-memory copy off all the trailing data to
+    /// realign it.
+    ///
+    /// Be aware that the given new title metadata should have cohesion with the stored content
+    /// blobs.
+    pub fn write_title_metadata_safe<T: Read + Write + Seek>(
+        &mut self,
+        mut stream: T,
+        new_title_metadata: &TitleMetadata,
+    ) -> Result<(), InstallableWadError> {
+        let mut stream = StreamPin::new(stream)?;
+
+        let contents = self.store_contents(&mut stream, new_title_metadata, 0)?;
+
+        unsafe {
+            self.write_title_metadata_raw(new_title_metadata, &mut stream)?;
+        }
+
+        self.restore_contents(&mut stream, new_title_metadata, &contents);
+
+        Ok(())
+    }
+
+    /// Like [Self::write_ticket_safe] but will also trim the size of the file to avoid garbage
+    /// data or useless zeroes.
+    ///
+    /// Be aware that the given new title metadata should have cohesion with the stored content
+    /// blobs.
+    pub fn write_title_metadata_safe_file(
+        &mut self,
+        file: &mut File,
+        new_title_metadata: &TitleMetadata,
+    ) -> Result<(), InstallableWadError> {
+        self.write_title_metadata_safe(&mut *file, new_title_metadata)?;
+
+        let new_file_size = file.stream_position()?;
+        file.set_len(new_file_size)?;
 
         Ok(())
     }

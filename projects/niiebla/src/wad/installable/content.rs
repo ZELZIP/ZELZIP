@@ -72,11 +72,12 @@ impl InstallableWad {
     /// The `title_metadata` entry will be updated with the correct hash and size and
     /// change the index and/or ID if requested.
     ///
+    /// # Safety
     /// Data after this content may be unaligned or overwritten. Using
     /// [Self::write_content_safe_wii] or [Self::write_content_safe_file_wii]
     /// may be preferred.
     #[allow(clippy::too_many_arguments)]
-    pub fn write_content_raw_wii<T: Read, S: Read + Write + Seek>(
+    pub unsafe fn write_content_raw_wii<T: Read, S: Read + Write + Seek>(
         &mut self,
         mut new_data: T,
         stream: S,
@@ -118,7 +119,7 @@ impl InstallableWad {
                 as usize,
         )?;
 
-        self.write_title_metadata(title_metadata, &mut stream)?;
+        self.write_title_metadata_raw(title_metadata, &mut stream)?;
 
         self.seek_content(&mut stream, title_metadata, physical_position)?;
 
@@ -161,15 +162,17 @@ impl InstallableWad {
             trailing_content_bytes.push(content_bytes);
         }
 
-        self.write_content_raw_wii(
-            new_data,
-            &mut stream,
-            ticket,
-            title_metadata,
-            physical_position,
-            new_index,
-            new_id,
-        )?;
+        unsafe {
+            self.write_content_raw_wii(
+                new_data,
+                &mut stream,
+                ticket,
+                title_metadata,
+                physical_position,
+                new_index,
+                new_id,
+            )?;
+        }
 
         for content_bytes in trailing_content_bytes {
             stream.write_all(&content_bytes)?;

@@ -1,8 +1,12 @@
 # TODO (NiiEBLA)
 
 ## Roadmap
-- Change `BigEndian` and `LittleEndian` to `BE` and `LE`
-- Avoid magic numbers on `size()`
+- `add_content`
+- `remove_content`
+
+- `write_wad` (Always safe)
+- `write_wad_file`
+
 - Trucha bug
     - Pararell option (?)
 - Dev titles support (`is_dev()`, use dev decrypt keys)
@@ -20,6 +24,7 @@
 - LZ77
 - WAD footer
 - ASH
+- Fix TMD content kind as bitflags
 
 - README.md
 

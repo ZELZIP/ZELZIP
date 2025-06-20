@@ -5,9 +5,11 @@ mod content;
 mod ticket;
 mod title_metadata;
 
+use crate::TitleMetadata;
+use crate::certificate_chain::CertificateChainError;
 use crate::ticket::PreSwitchTicketError;
 use crate::title_metadata::TitleMetadataError;
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{BE, ReadBytesExt, WriteBytesExt};
 use std::io;
 use std::io::Read;
 use std::io::Seek;
@@ -28,6 +30,11 @@ pub struct InstallableWad {
     pub footer_size: u32,
 }
 
+struct ContentsStore {
+    contents: Vec<Vec<u8>>,
+    first_content_physical_position: usize,
+}
+
 impl InstallableWad {
     const HEADER_SIZE: u64 = 64;
     const SECTION_BOUNDARY: u64 = 64;
@@ -42,18 +49,18 @@ impl InstallableWad {
     /// # Safety
     /// The given buffer is assumed to be from an installable WAD.
     pub(crate) unsafe fn new<T: Read + Seek>(mut stream: T) -> Result<Self, InstallableWadError> {
-        let header_size = stream.read_u32::<BigEndian>()?;
+        let header_size = stream.read_u32::<BE>()?;
         let kind = InstallableWadKind::new(&mut stream)?;
-        let version = stream.read_u16::<BigEndian>()?;
-        let certificate_chain_size = stream.read_u32::<BigEndian>()?;
+        let version = stream.read_u16::<BE>()?;
+        let certificate_chain_size = stream.read_u32::<BE>()?;
 
         // Skip four reserved bytes
         stream.seek_relative(4)?;
 
-        let ticket_size = stream.read_u32::<BigEndian>()?;
-        let title_metadata_size = stream.read_u32::<BigEndian>()?;
-        let content_size = stream.read_u32::<BigEndian>()?;
-        let footer_size = stream.read_u32::<BigEndian>()?;
+        let ticket_size = stream.read_u32::<BE>()?;
+        let title_metadata_size = stream.read_u32::<BE>()?;
+        let content_size = stream.read_u32::<BE>()?;
+        let footer_size = stream.read_u32::<BE>()?;
 
         Ok(Self {
             header_size,
@@ -71,17 +78,66 @@ impl InstallableWad {
     pub fn dump<T: Write + Seek>(&self, stream: T) -> io::Result<()> {
         let mut stream = StreamPin::new(stream)?;
 
-        stream.write_u32::<BigEndian>(32)?;
+        stream.write_u32::<BE>(32)?;
         write!(stream, "Is")?;
-        stream.write_u16::<BigEndian>(0)?;
-        stream.write_u32::<BigEndian>(self.certificate_chain_size)?;
+        stream.write_u16::<BE>(0)?;
+        stream.write_u32::<BE>(self.certificate_chain_size)?;
         stream.write_zeroed(4)?;
 
-        stream.write_u32::<BigEndian>(self.ticket_size)?;
-        stream.write_u32::<BigEndian>(self.title_metadata_size)?;
-        stream.write_u32::<BigEndian>(self.content_size)?;
-        stream.write_u32::<BigEndian>(self.footer_size)?;
+        stream.write_u32::<BE>(self.ticket_size)?;
+        stream.write_u32::<BE>(self.title_metadata_size)?;
+        stream.write_u32::<BE>(self.content_size)?;
+        stream.write_u32::<BE>(self.footer_size)?;
         stream.align_zeroed(64)?;
+
+        Ok(())
+    }
+
+    fn store_contents<T: Read + Write + Seek>(
+        &mut self,
+        mut stream: T,
+        title_metadata: &TitleMetadata,
+        first_content_physical_position: usize,
+    ) -> Result<ContentsStore, InstallableWadError> {
+        let mut all_contents_bytes = vec![];
+
+        if title_metadata.content_chunk_entries.len() == 0 {
+            return Ok(ContentsStore {
+                contents: all_contents_bytes,
+                first_content_physical_position,
+            });
+        }
+
+        for i in first_content_physical_position..title_metadata.content_chunk_entries.len() {
+            let mut view = self.encrypted_content_view(&mut stream, title_metadata, i)?;
+
+            let mut content_bytes = vec![];
+            view.read_to_end(&mut content_bytes)?;
+            all_contents_bytes.push(content_bytes);
+        }
+
+        Ok(ContentsStore {
+            contents: all_contents_bytes,
+            first_content_physical_position,
+        })
+    }
+
+    fn restore_contents<T: Write + Read + Seek>(
+        &mut self,
+        stream: &mut StreamPin<T>,
+        title_metadata: &TitleMetadata,
+        contents_store: &ContentsStore,
+    ) -> Result<(), InstallableWadError> {
+        self.seek_content(
+            &mut *stream,
+            title_metadata,
+            contents_store.first_content_physical_position,
+        )?;
+
+        for bytes in &contents_store.contents {
+            stream.write_all(&bytes)?;
+            stream.align_zeroed(Self::SECTION_BOUNDARY)?;
+        }
 
         Ok(())
     }
@@ -101,6 +157,9 @@ pub enum InstallableWadError {
 
     #[error("Title metadata error: {0}")]
     TitleMetadataError(#[from] TitleMetadataError),
+
+    #[error("Certificate chain error: {0}")]
+    CertificateChainError(#[from] CertificateChainError),
 
     #[error("The given content entry phyisical position doesn't exist: {0}")]
     ContentEntryPhysicalPositionDoesntExist(usize),

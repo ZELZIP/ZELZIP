@@ -98,17 +98,17 @@ impl TitleMetadata {
         // On some platforms this byte has a meaning as a bool
         let first_reserved_byte = stream.read_bool()?;
 
-        let system_runtime_title_id = match stream.read_u64::<BigEndian>()? {
+        let system_runtime_title_id = match stream.read_u64::<BE>()? {
             0 => None,
             title_id => Some(TitleId::new(title_id)),
         };
 
-        let title_id = TitleId::new(stream.read_u64::<BigEndian>()?);
+        let title_id = TitleId::new(stream.read_u64::<BE>()?);
 
         let mut platform_data =
-            TitleMetadataPlatformData::new_dummy_from_identifier(stream.read_u32::<BigEndian>()?)?;
+            TitleMetadataPlatformData::new_dummy_from_identifier(stream.read_u32::<BE>()?)?;
 
-        let group_id = stream.read_u16::<BigEndian>()?;
+        let group_id = stream.read_u16::<BE>()?;
 
         match platform_data {
             TitleMetadataPlatformData::DSi | TitleMetadataPlatformData::WiiU => {
@@ -143,9 +143,8 @@ impl TitleMetadata {
                 // Skip 2 zeroed bytes
                 stream.seek_relative(2)?;
 
-                *region = TitleMetadataPlatformDataWiiRegion::from_identifier(
-                    stream.read_u16::<BigEndian>()?,
-                )?;
+                *region =
+                    TitleMetadataPlatformDataWiiRegion::from_identifier(stream.read_u16::<BE>()?)?;
 
                 *ratings = util::read_exact!(stream, 16)?;
 
@@ -159,10 +158,10 @@ impl TitleMetadata {
             }
         }
 
-        let access_rights = stream.read_u32::<BigEndian>()?;
-        let title_version = stream.read_u16::<BigEndian>()?;
-        let number_of_content_entries = stream.read_u16::<BigEndian>()?;
-        let boot_content_index = stream.read_u16::<BigEndian>()?;
+        let access_rights = stream.read_u32::<BE>()?;
+        let title_version = stream.read_u16::<BE>()?;
+        let number_of_content_entries = stream.read_u16::<BE>()?;
+        let boot_content_index = stream.read_u16::<BE>()?;
 
         // Skip the title minor version as it was never used
         stream.seek_relative(2)?;
@@ -235,7 +234,7 @@ impl TitleMetadata {
 
         self.title_id.dump(&mut stream)?;
         self.platform_data.dump_identifier(&mut stream)?;
-        stream.write_u16::<BigEndian>(self.group_id)?;
+        stream.write_u16::<BE>(self.group_id)?;
 
         match &self.platform_data {
             TitleMetadataPlatformData::DSi | TitleMetadataPlatformData::WiiU => {
@@ -276,10 +275,10 @@ impl TitleMetadata {
             }
         }
 
-        stream.write_u32::<BigEndian>(self.access_rights)?;
-        stream.write_u16::<BigEndian>(self.title_version)?;
-        stream.write_u16::<BigEndian>(self.content_chunk_entries.len() as u16)?;
-        stream.write_u16::<BigEndian>(self.boot_content_index)?;
+        stream.write_u32::<BE>(self.access_rights)?;
+        stream.write_u16::<BE>(self.title_version)?;
+        stream.write_u16::<BE>(self.content_chunk_entries.len() as u16)?;
+        stream.write_u16::<BE>(self.boot_content_index)?;
 
         // Skip the title minor version as it was never used
         stream.seek_relative(2)?;
@@ -438,7 +437,7 @@ impl TitleMetadataPlatformData {
     }
 
     fn dump_identifier<T: Write>(&self, mut stream: T) -> io::Result<()> {
-        stream.write_u32::<BigEndian>(match self {
+        stream.write_u32::<BE>(match self {
             Self::DSi => 0,
 
             Self::Wii {
@@ -486,7 +485,7 @@ impl TitleMetadataPlatformDataWiiRegion {
     }
 
     fn dump_identifier<T: Write>(&self, mut stream: T) -> io::Result<()> {
-        stream.write_u16::<BigEndian>(match &self {
+        stream.write_u16::<BE>(match &self {
             Self::Japan => 0,
             Self::USA => 1,
             Self::Europe => 2,
@@ -551,10 +550,10 @@ pub enum TitleMetadataContentEntryKind {
 
 impl TitleMetadataContentEntry {
     fn new<T: Read + Seek>(mut stream: T, version_1: bool) -> Result<Self, TitleMetadataError> {
-        let id = stream.read_u32::<BigEndian>()?;
-        let index = stream.read_u16::<BigEndian>()?;
+        let id = stream.read_u32::<BE>()?;
+        let index = stream.read_u16::<BE>()?;
 
-        let kind = match stream.read_u16::<BigEndian>()? {
+        let kind = match stream.read_u16::<BE>()? {
             0x0001 => TitleMetadataContentEntryKind::Normal,
             0x2001 => TitleMetadataContentEntryKind::NormalWiiUKind1,
             0x2003 => TitleMetadataContentEntryKind::NormalWiiUKind2,
@@ -565,7 +564,7 @@ impl TitleMetadataContentEntry {
             identifier => return Err(TitleMetadataError::UnknownContentEntryKind(identifier)),
         };
 
-        let size = stream.read_u64::<BigEndian>()?;
+        let size = stream.read_u64::<BE>()?;
         let hash = if version_1 {
             TitleMetadataContentEntryHashKind::Version1(util::read_exact!(stream, 32)?)
         } else {
@@ -582,10 +581,10 @@ impl TitleMetadataContentEntry {
     }
 
     fn dump<T: Write>(&self, mut stream: T) -> io::Result<()> {
-        stream.write_u32::<BigEndian>(self.id)?;
-        stream.write_u16::<BigEndian>(self.index)?;
+        stream.write_u32::<BE>(self.id)?;
+        stream.write_u16::<BE>(self.index)?;
 
-        stream.write_u16::<BigEndian>(match &self.kind {
+        stream.write_u16::<BE>(match &self.kind {
             TitleMetadataContentEntryKind::Normal => 0x0001,
             TitleMetadataContentEntryKind::NormalWiiUKind1 => 0x2001,
             TitleMetadataContentEntryKind::NormalWiiUKind2 => 0x2003,
@@ -594,7 +593,7 @@ impl TitleMetadataContentEntry {
             TitleMetadataContentEntryKind::Shared => 0x8001,
         })?;
 
-        stream.write_u64::<BigEndian>(self.size)?;
+        stream.write_u64::<BE>(self.size)?;
 
         match &self.hash {
             TitleMetadataContentEntryHashKind::Version0(value) => stream.write_all(value)?,
@@ -654,8 +653,8 @@ impl TitleMetadataV1ContentEntriesGroup {
     }
 
     fn new<T: Read + Seek>(mut stream: T) -> Result<Self, TitleMetadataError> {
-        let first_content_index = stream.read_u16::<BigEndian>()?;
-        let content_entries_in_the_group = stream.read_u16::<BigEndian>()?;
+        let first_content_index = stream.read_u16::<BE>()?;
+        let content_entries_in_the_group = stream.read_u16::<BE>()?;
 
         let content_entries_group_hash_sha256 = util::read_exact!(stream, 32)?;
 
@@ -667,8 +666,8 @@ impl TitleMetadataV1ContentEntriesGroup {
     }
 
     fn dump<T: Write>(&self, mut stream: T) -> io::Result<()> {
-        stream.write_u16::<BigEndian>(self.first_content_index)?;
-        stream.write_u16::<BigEndian>(self.content_entries_in_the_group)?;
+        stream.write_u16::<BE>(self.first_content_index)?;
+        stream.write_u16::<BE>(self.content_entries_in_the_group)?;
         stream.write_all(&self.content_entries_group_hash_sha256)?;
 
         Ok(())
