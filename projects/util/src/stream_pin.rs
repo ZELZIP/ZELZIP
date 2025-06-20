@@ -31,6 +31,10 @@ impl<T: Seek> StreamPin<T> {
         Ok(())
     }
 
+    pub fn relative_position(&mut self) -> io::Result<i64> {
+        Ok(self.stream_position()? as i64 - self.start_position as i64)
+    }
+
     pub fn seek_from_pin(&mut self, step: u64) -> io::Result<u64> {
         self.seek(SeekFrom::Start(self.start_position + step))
     }

@@ -1,7 +1,6 @@
 # TODO (NiiEBLA)
 
 ## Roadmap
-- Finish TicketV1 dumping and check if it parses back
 - Change `BigEndian` and `LittleEndian` to `BE` and `LE`
 - Avoid magic numbers on `size()`
 - Trucha bug

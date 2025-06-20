@@ -2,7 +2,7 @@
 
 use crate::signed_blob_header::{SignedBlobHeader, SignedBlobHeaderError};
 use crate::title_id::TitleId;
-use byteorder::{BigEndian, LE, ReadBytesExt, WriteBytesExt};
+use byteorder::{BE, LE, ReadBytesExt, WriteBytesExt};
 use std::io;
 use std::io::Read;
 use std::io::Seek;

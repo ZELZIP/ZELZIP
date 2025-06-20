@@ -71,31 +71,54 @@ impl PreSwitchTicketV1ExtraData {
         Ok(PreSwitchTicketV1ExtraData { sections, flags })
     }
 
-    pub(crate) fn dump<T: Write>(&self, mut stream: T) -> io::Result<()> {
+    pub(crate) fn dump<T: Write + Seek>(&self, mut stream: T) -> io::Result<()> {
+        let mut stream = StreamPin::new(stream)?;
+
         // Ticket V1 version
         stream.write_u16::<BE>(1)?;
 
         stream.write_u16::<BE>(Self::HEADER_SIZE)?;
         stream.write_u32::<BE>(self.size());
 
-        // The position of the section header is relative to the start of the V1 section of the
-        // ticket, so just put it after the main header
-        stream.write_u32::<BE>(Self::HEADER_SIZE as u32)?;
+        // Skip this for now as we cannot know the position of the first section yet
+        let first_section_byte_header_position = stream.relative_position()? as u64;
+        stream.seek_relative(4)?;
 
         stream.write_u16::<BE>(self.sections.len() as u16)?;
         stream.write_u16::<BE>(Self::SECTION_HEADER_SIZE)?;
         stream.write_u32::<BE>(self.flags)?;
 
+        let mut start_of_records = vec![];
+        for section in &self.sections {
+            start_of_records.push(stream.relative_position()? as u32);
+            section.records.dump(&mut stream);
+        }
+
         for (i, section) in self.sections.iter().enumerate() {
-            // Offset to the section
-            stream.write_u32::<BE>(Self::HEADER_SIZE as u32 + Self::SECTION_HEADER_SIZE * i)?;
+            if i == 0 {
+                let first_section_byte_position = stream.relative_position()? as u64;
+
+                stream.seek_from_pin(first_section_byte_header_position)?;
+                stream.write_u32::<BE>(first_section_byte_position as u32)?;
+
+                stream.seek_from_pin(first_section_byte_position)?;
+            }
+
+            stream.write_u32::<BE>(start_of_records[i])?;
 
             stream.write_u32::<BE>(section.records.len())?;
-            // Next:
-            // // Size of each record
-            // Total size of this section
-            // Type code of this section
-            // Miscellaneous attributes
+            stream.write_u32::<BE>(section.records.size_of_one_record())?;
+            stream.write_u32::<BE>(Self::SECTION_HEADER_SIZE.into())?;
+
+            stream.write_u16::<BE>(match section.records {
+                PreSwitchTicketV1ExtraDataRecords::Permanent(_) => 1,
+                PreSwitchTicketV1ExtraDataRecords::Subscription(_) => 2,
+                PreSwitchTicketV1ExtraDataRecords::Content(_) => 3,
+                PreSwitchTicketV1ExtraDataRecords::ContentConsumption(_) => 4,
+                PreSwitchTicketV1ExtraDataRecords::AccessTitle(_) => 5,
+            })?;
+
+            stream.write_u16::<BE>(section.flags)?;
         }
 
         Ok(())
@@ -148,13 +171,17 @@ pub enum PreSwitchTicketV1ExtraDataRecords {
 
 impl PreSwitchTicketV1ExtraDataRecords {
     fn size(&self) -> u32 {
-        (match self {
-            Self::Permanent(data) => (16 + 4) * data.len(),
-            Self::Subscription(data) => (16 + 4 + 4) * data.len(),
-            Self::Content(data) => (128 + 4) * data.len(),
-            Self::ContentConsumption(data) => (2 + 2 + 4) * data.len(),
-            Self::AccessTitle(data) => (8 + 8) * data.len(),
-        }) as u32
+        self.size_of_one_record() * self.len()
+    }
+
+    fn size_of_one_record(&self) -> u32 {
+        match self {
+            Self::Permanent(_) => 16 + 4,
+            Self::Subscription(_) => 16 + 4 + 4,
+            Self::Content(_) => 128 + 4,
+            Self::ContentConsumption(_) => 2 + 2 + 4,
+            Self::AccessTitle(_) => 8 + 8,
+        }
     }
 
     fn len(&self) -> u32 {
@@ -166,6 +193,47 @@ impl PreSwitchTicketV1ExtraDataRecords {
             Self::AccessTitle(data) => data.len(),
         }) as u32
     }
+
+    pub(crate) fn dump<T: Write>(&self, mut stream: T) -> io::Result<()> {
+        match self {
+            PreSwitchTicketV1ExtraDataRecords::Permanent(data) => {
+                for record in data {
+                    record.reference_id.dump(&mut stream)?;
+                }
+            }
+
+            PreSwitchTicketV1ExtraDataRecords::Subscription(data) => {
+                for record in data {
+                    stream.write_u32::<BE>(record.expiration_time)?;
+                    record.reference_id.dump(&mut stream)?;
+                }
+            }
+
+            PreSwitchTicketV1ExtraDataRecords::Content(data) => {
+                for record in data {
+                    stream.write_u32::<BE>(record.offset_content_index)?;
+                    stream.write_all(&record.access_mask)?;
+                }
+            }
+
+            PreSwitchTicketV1ExtraDataRecords::ContentConsumption(data) => {
+                for record in data {
+                    stream.write_u16::<BE>(record.content_index)?;
+                    stream.write_u16::<BE>(record.limit_code)?;
+                    stream.write_u32::<BE>(record.limit_value)?;
+                }
+            }
+
+            PreSwitchTicketV1ExtraDataRecords::AccessTitle(data) => {
+                for record in data {
+                    record.title_id.dump(&mut stream)?;
+                    stream.write_u64::<BE>(record.title_mask)?;
+                }
+            }
+        }
+
+        Ok(())
+    }
 }
 
 impl PreSwitchTicketV1ExtraDataSection {
@@ -174,8 +242,10 @@ impl PreSwitchTicketV1ExtraDataSection {
     ) -> Result<PreSwitchTicketV1ExtraDataSection, PreSwitchTicketV1Error> {
         let section_records_offset = stream.read_u32::<BE>()?;
         let number_of_records = stream.read_u32::<BE>()?;
+        // TODO: Verify this?
         let size_of_a_record = stream.read_u32::<BE>()?;
-        let section_and_records_size = stream.read_u32::<BE>()?;
+        // TODO: Verify this
+        let section_header_size = stream.read_u32::<BE>()?;
         let section_kind = stream.read_u16::<BE>()?;
         let flags = stream.read_u16::<BE>()?;
 
@@ -265,6 +335,13 @@ impl PreSwitchTicketV1ExtraDataRefereceId {
         let attributes = stream.read_u32::<BE>()?;
 
         Ok(PreSwitchTicketV1ExtraDataRefereceId { id, attributes })
+    }
+
+    fn dump<T: Write>(&self, mut stream: T) -> io::Result<()> {
+        stream.write_all(&self.id)?;
+        stream.write_u32::<BE>(self.attributes)?;
+
+        Ok(())
     }
 }
 
