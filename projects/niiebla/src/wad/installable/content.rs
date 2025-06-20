@@ -5,7 +5,6 @@ use sha1::{Digest, Sha1};
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use util::AesCbcStream;
-use util::sha::hash_stream_into_sha1;
 use util::{StreamPin, View, WriteEx};
 
 impl InstallableWad {

@@ -1,24 +1,35 @@
 # TODO (NiiEBLA)
 
-- Make Wii WAD Filesystem Representation (W2FSR)?
-  - NOT Implement with custom Serialize, ONLY ALLOW STRICT TYPES OF FORMAT
-  - Do it in another crate.
-- When all is finished make a README.md
-- Add logging support (also tracing?)
-
-## TODO comments firsts
-- Ticket V1
-- footer
-- Backup wads
+## Roadmap
+- Finish TicketV1 dumping and check if it parses back
+- Change `BigEndian` and `LittleEndian` to `BE` and `LE`
+- Avoid magic numbers on `size()`
 - Trucha bug
-- U8
+    - Pararell option (?)
+- Dev titles support (`is_dev()`, use dev decrypt keys)
+- Port to Python the tooling
+- E2E testing
+- Documentation
+- Logging
 
-Content editing supoort on non-Wii consoles:
+- DSi support
+    - `wad.is_tad()`
+
+- U8
+- Backup WADs
+    - Save data
+- LZ77
+- WAD footer
+- ASH
+
+- README.md
+
+Content editing supoort on non-Wii and non-DSi platforms:
 - Missing handeling off SHA-256
-- Edit content grups in TMD
+- Edit content entry groups in TMDv1
 
 Lax limitations (that can be fixed if there is interest):
-- Wii Development titles are not supported.
+- 1:1 byte match on the V1 section of a `PreSwitchTicket` is not ensured, although the resulting data will always be valid, also in most cases a 100% byte match will usually happen.
 
 Limitations (will not be implemented unless a lot of interest is arised and documentation is improved):
 - Content viewing and editing only available on Wii titles.

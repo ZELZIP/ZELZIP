@@ -19,4 +19,15 @@ fn main() {
     let tik = niiebla::PreSwitchTicket::new(&tik_file).unwrap();
 
     println!("{:?}", tik);
+    println!("SIZE: {:?}", tik.size());
+
+    let mut new_tik_file = File::options()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(&args[2])
+        .unwrap();
+
+    tik.dump(&mut new_tik_file).unwrap();
 }

@@ -27,9 +27,6 @@ mod stream_pin;
 #[cfg(feature = "std")]
 mod aes;
 
-#[cfg(feature = "std")]
-pub mod sha;
-
 use cfg_if::cfg_if;
 
 cfg_if! {

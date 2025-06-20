@@ -31,6 +31,10 @@ impl<T: Seek> StreamPin<T> {
         Ok(())
     }
 
+    pub fn seek_from_pin(&mut self, step: u64) -> io::Result<u64> {
+        self.seek(SeekFrom::Start(self.start_position + step))
+    }
+
     /// Align the position of the stream relative to the pinned position.
     pub fn align_position(&mut self, boundary: u64) -> io::Result<()> {
         let relative_position = self.stream_position()? - self.start_position;
@@ -86,6 +90,7 @@ mod tests {
     use std::io::Cursor;
 
     // TODO(IMPLEMENT): Tests for going behind.
+    // And for going relative.
 
     #[test]
     fn test_go_to_pin() {
