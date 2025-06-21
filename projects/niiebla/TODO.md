@@ -1,11 +1,9 @@
 # TODO (NiiEBLA)
 
 ## Roadmap
-- `add_content`
-- `remove_content`
-
-- `write_wad` (Always safe)
-- `write_wad_file`
+New builder pattern API:
+- Contents
+- Is WADs ?
 
 - Trucha bug
     - Pararell option (?)

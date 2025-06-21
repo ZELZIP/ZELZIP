@@ -1,4 +1,6 @@
-use crate::title_metadata::TitleMetadataContentEntryHashKind;
+use crate::title_metadata::{
+    TitleMetadataContentEntry, TitleMetadataContentEntryHashKind, TitleMetadataContentEntryKind,
+};
 use crate::wad::installable::{InstallableWad, InstallableWadError};
 use crate::{PreSwitchTicket, TitleMetadata};
 use sha1::{Digest, Sha1};
@@ -119,7 +121,9 @@ impl InstallableWad {
                 as usize,
         )?;
 
-        self.write_title_metadata_raw(title_metadata, &mut stream)?;
+        unsafe {
+            self.write_title_metadata_raw(title_metadata, &mut stream)?;
+        }
 
         self.seek_content(&mut stream, title_metadata, physical_position)?;
 
@@ -218,6 +222,64 @@ impl InstallableWad {
         let len = file.stream_position()?;
 
         file.into_inner().set_len(len)?;
+
+        Ok(())
+    }
+
+    pub fn add_content_wii<T: Read + Write + Seek, S: Read + Write + Seek>(
+        &mut self,
+        mut stream: T,
+        mut new_content_data: S,
+        ticket: &PreSwitchTicket,
+        title_metadata: &mut TitleMetadata,
+        physical_position: Option<usize>,
+        id: u32,
+        index: u16,
+        entry_kind: TitleMetadataContentEntryKind,
+    ) -> Result<(), InstallableWadError> {
+        let mut stream = StreamPin::new(stream)?;
+
+        let physical_position =
+            physical_position.unwrap_or(title_metadata.content_chunk_entries.len());
+
+        let mut content = vec![];
+        new_content_data.read_to_end(&mut content)?;
+
+        title_metadata.content_chunk_entries.insert(
+            physical_position,
+            TitleMetadataContentEntry {
+                id,
+                index,
+                kind: entry_kind,
+
+                // Dummy data
+                size: 0,
+                hash: 0,
+            },
+        );
+
+        println!("TMD: {title_metadata:?}");
+
+        self.write_title_metadata_safe(&mut stream, title_metadata)?;
+
+        let contents = self.store_contents(&mut stream, title_metadata, physical_position)?;
+
+        unsafe {
+            self.write_content_raw_wii(
+                new_content_data,
+                &mut stream,
+                ticket,
+                title_metadata,
+                physical_position,
+                None,
+                None,
+            )?;
+        }
+
+        for bytes in &contents.contents {
+            stream.write_all(&bytes)?;
+            stream.align_zeroed(Self::SECTION_BOUNDARY)?;
+        }
 
         Ok(())
     }
