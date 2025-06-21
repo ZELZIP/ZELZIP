@@ -1,7 +1,10 @@
 //! Implementation of the binary file format used by Nintendo to store tickets.
 
+use crate::ContentSelector;
+use crate::TitleMetadata;
 use crate::signed_blob_header::{SignedBlobHeader, SignedBlobHeaderError};
 use crate::title_id::TitleId;
+use crate::title_metadata::TitleMetadataError;
 use crate::wii_common_key::{CommonKeyKindError, WiiCommonKeyKind};
 use aes::cipher::{BlockDecryptMut, KeyIvInit, block_padding::NoPadding};
 use bitflags::bitflags;
@@ -16,6 +19,11 @@ use util::AesCbcStream;
 use util::WriteEx;
 
 pub mod v1;
+
+#[derive(Copy, Clone)]
+pub enum CryptographicMethod {
+    Wii,
+}
 
 /// Manifest data regard the ownership of a title and its permissions over the hardware.
 ///
@@ -183,36 +191,6 @@ impl PreSwitchTicket {
         })
     }
 
-    /// Either if this ticket was generated to be used only in a specific console (the associated
-    /// title was purchased) or not.
-    pub fn is_device_unique(&self) -> bool {
-        self.device_id.is_some()
-    }
-
-    /// Decrypt the title key using the correct common key, only works with Nintendo Wii titles.
-    pub fn decrypt_title_key_wii_method(&self) -> Result<[u8; 16], PreSwitchTicketError> {
-        let id = if self.is_device_unique() {
-            self.ticket_id
-        } else {
-            self.title_id.inner()
-        };
-
-        #[allow(clippy::expect_used)]
-        let iv: [u8; 16] = [id.to_be_bytes(), [0; 8]]
-            .concat()
-            .try_into()
-            .expect("Will never fail, the `id` slice has always a size of 8");
-
-        let common_key_kind = WiiCommonKeyKind::new(self.common_key_kind_index)?;
-        let cipher = Aes128CbcDec::new((&common_key_kind.bytes()).into(), &iv.into());
-
-        let mut title_key = self.encrypted_title_key;
-
-        cipher.decrypt_padded_mut::<NoPadding>(&mut title_key)?;
-
-        Ok(title_key)
-    }
-
     /// Dump into a stream.
     pub fn dump<T: Write + Seek>(&self, mut stream: T) -> io::Result<()> {
         self.signed_blob_header.dump(&mut stream)?;
@@ -266,33 +244,67 @@ impl PreSwitchTicket {
         size
     }
 
-    fn get_key_and_iv(
-        &self,
-        content_index: u16,
-    ) -> Result<([u8; 16], [u8; 16]), PreSwitchTicketError> {
-        let title_key = self.decrypt_title_key_wii_method()?;
-
-        // Add 14 trailing zeroed bytes to the IV
-        let mut iv = Vec::from(content_index.to_be_bytes());
-        iv.append(&mut Vec::from([0; 14]));
-
-        #[allow(clippy::expect_used)]
-        let iv: [u8; 16] = iv
-            .try_into()
-            .expect("Will never fail, the `content_index` is always 16 bits");
-
-        Ok((title_key, iv))
+    /// Either if this ticket was generated to be used only in a specific console (the associated
+    /// title was purchased) or not.
+    pub fn is_device_unique(&self) -> bool {
+        self.device_id.is_some()
     }
 
-    /// Get a decryptor of a content for the given stream.
-    pub fn cryptographic_stream_wii_method<T: Seek>(
+    /// Decrypt the title key.
+    pub fn decrypt_title_key(
+        &self,
+        cryptographic_method: CryptographicMethod,
+    ) -> Result<[u8; 16], PreSwitchTicketError> {
+        match cryptographic_method {
+            CryptographicMethod::Wii => {
+                let id = if self.is_device_unique() {
+                    self.ticket_id
+                } else {
+                    self.title_id.inner()
+                };
+
+                #[allow(clippy::expect_used)]
+                let iv: [u8; 16] = [id.to_be_bytes(), [0; 8]]
+                    .concat()
+                    .try_into()
+                    .expect("Will never fail, the `id` slice has always a size of 8");
+
+                let common_key_kind = WiiCommonKeyKind::new(self.common_key_kind_index)?;
+                let cipher = Aes128CbcDec::new((&common_key_kind.bytes()).into(), &iv.into());
+
+                let mut title_key = self.encrypted_title_key;
+
+                cipher.decrypt_padded_mut::<NoPadding>(&mut title_key)?;
+
+                Ok(title_key)
+            }
+        }
+    }
+
+    /// Get a decryptor of a content, where the `stream` is the content bytes.
+    pub fn cryptographic_stream<T: Seek>(
         &self,
         stream: T,
-        content_index: u16,
+        title_metadata: &TitleMetadata,
+        content_selector: ContentSelector,
+        cryptographic_method: CryptographicMethod,
     ) -> Result<AesCbcStream<T>, PreSwitchTicketError> {
-        let (title_key, iv) = self.get_key_and_iv(content_index)?;
+        match cryptographic_method {
+            CryptographicMethod::Wii => {
+                let title_key = self.decrypt_title_key(cryptographic_method)?;
 
-        Ok(AesCbcStream::new(stream, title_key, iv)?)
+                // Add 14 trailing zeroed bytes to the IV
+                let mut iv = Vec::from(content_selector.index(title_metadata)?.to_be_bytes());
+                iv.append(&mut Vec::from([0; 14]));
+
+                #[allow(clippy::expect_used)]
+                let iv: [u8; 16] = iv
+                    .try_into()
+                    .expect("Will never fail, the `content_index` is always 16 bits");
+
+                Ok(AesCbcStream::new(stream, title_key, iv)?)
+            }
+        }
     }
 }
 
@@ -331,6 +343,9 @@ pub enum PreSwitchTicketError {
 
     #[error("Ticket V1 error: {0}")]
     TicketV1Error(#[from] v1::PreSwitchTicketV1Error),
+
+    #[error("Title metadata error: {0}")]
+    TitleMetadataError(#[from] TitleMetadataError),
 }
 
 bitflags! {

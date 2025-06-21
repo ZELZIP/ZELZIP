@@ -11,6 +11,10 @@ use std::string::FromUtf8Error;
 use thiserror::Error;
 use util::{ReadEx, WriteEx};
 
+pub mod content_selector;
+
+use content_selector::{ContentSelector, ContentSelectorMethod};
+
 /// Manifest data regard the title itself, its structure and allowed system access (Also known as
 /// `TMD` data).
 ///
@@ -342,6 +346,32 @@ impl TitleMetadata {
 
         size
     }
+
+    pub fn select_with_physical_position(&self, position: usize) -> ContentSelector {
+        ContentSelector {
+            method: ContentSelectorMethod::WithPhysicalPosition(position),
+        }
+    }
+
+    pub fn select_with_id(&self, id: u32) -> ContentSelector {
+        ContentSelector {
+            method: ContentSelectorMethod::WithId(id),
+        }
+    }
+
+    pub fn select_with_index(&self, index: u16) -> ContentSelector {
+        ContentSelector {
+            method: ContentSelectorMethod::WithIndex(index),
+        }
+    }
+
+    pub fn select_first(&self) -> ContentSelector {
+        self.select_with_physical_position(0)
+    }
+
+    pub fn select_last(&self) -> ContentSelector {
+        self.select_with_physical_position(self.content_chunk_entries.len() - 1)
+    }
 }
 
 #[derive(Error, Debug)]
@@ -376,6 +406,9 @@ pub enum TitleMetadataError {
 
     #[error("The version of the title metadata is not compatible (version: {0})")]
     IncompatibleVersion(u8),
+
+    #[error("Content not found")]
+    ContentNotFound(),
 }
 
 #[derive(Debug)]
@@ -498,7 +531,7 @@ impl TitleMetadataPlatformDataWiiRegion {
 }
 
 /// An entry of a content of a title, a content is just a signed
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct TitleMetadataContentEntry {
     /// The ID of the content. Unique per title.
     pub id: u32,
@@ -516,7 +549,7 @@ pub struct TitleMetadataContentEntry {
     pub hash: TitleMetadataContentEntryHashKind,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum TitleMetadataContentEntryHashKind {
     /// A SHA-1 hash.
     Version0([u8; 20]),
@@ -525,7 +558,7 @@ pub enum TitleMetadataContentEntryHashKind {
     Version1([u8; 32]),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 /// The kind (behaviour of the content inside the system) of the content.
 pub enum TitleMetadataContentEntryKind {
     /// A normal content.

@@ -155,6 +155,7 @@ dependencies = [
  "cfg-if",
  "gotre_util",
  "sha1",
+ "sha2",
  "thiserror",
 ]
 

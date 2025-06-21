@@ -11,6 +11,8 @@ pub mod wad;
 pub mod wii_common_key;
 
 pub use certificate_chain::CertificateChain;
-pub use ticket::PreSwitchTicket;
-pub use title_metadata::{TitleMetadata, TitleMetadataContentEntryKind};
+pub use ticket::{CryptographicMethod, PreSwitchTicket};
+pub use title_metadata::{
+    TitleMetadata, TitleMetadataContentEntryKind, content_selector::ContentSelector,
+};
 pub use wad::Wad;

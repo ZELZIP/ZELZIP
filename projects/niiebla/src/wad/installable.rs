@@ -5,6 +5,7 @@ mod content;
 mod ticket;
 mod title_metadata;
 
+use crate::ContentSelector;
 use crate::TitleMetadata;
 use crate::certificate_chain::CertificateChainError;
 use crate::ticket::PreSwitchTicketError;
@@ -109,7 +110,11 @@ impl InstallableWad {
         }
 
         for i in first_content_physical_position..title_metadata.content_chunk_entries.len() {
-            let mut view = self.encrypted_content_view(&mut stream, title_metadata, i)?;
+            let mut view = self.encrypted_content_view(
+                &mut stream,
+                title_metadata,
+                title_metadata.select_with_physical_position(i),
+            )?;
 
             let mut content_bytes = vec![];
             view.read_to_end(&mut content_bytes)?;
@@ -131,7 +136,8 @@ impl InstallableWad {
         self.seek_content(
             &mut *stream,
             title_metadata,
-            contents_store.first_content_physical_position,
+            title_metadata
+                .select_with_physical_position(contents_store.first_content_physical_position),
         )?;
 
         for bytes in &contents_store.contents {
@@ -161,11 +167,11 @@ pub enum InstallableWadError {
     #[error("Certificate chain error: {0}")]
     CertificateChainError(#[from] CertificateChainError),
 
-    #[error("The given content entry phyisical position doesn't exist: {0}")]
-    ContentEntryPhysicalPositionDoesntExist(usize),
-
     #[error("The given title is not for the Wii platform")]
     NotAWiiTitle,
+
+    #[error("Missing a to modify this content: {0}")]
+    ModifyContentMissingSetting(&'static str),
 }
 
 #[derive(Debug)]
