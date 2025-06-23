@@ -1,19 +1,19 @@
 # TODO (NiiEBLA)
 
 ## Roadmap
+
 - Warnings
-- Avoid != 0 WAD versions
 - Documentation
 - Port to Python the tooling
 - E2E testing
 
 - Wii dev titles support (`is_dev()`, use dev decrypt keys)
 - Trucha bug
-    - Pararell option (?)
+  - Pararell option (?)
 - DSi cryptographic method
 - U8
 - Backup WADs
-    - Save data
+  - Save data
 - LZ77
 - WAD footer
 - ASH
@@ -25,6 +25,7 @@
 Content editing upport on non-Wii and non-DSi platforms:
 
 Limitations (will not be implemented unless a lot of interest is arised and documentation is improved):
+
 - Content viewing and editing only available on Wii and DSi titles.
 - CRL data on WAD files is not preserved.
 - Arbitrary content types is not supported (understading and documenting the meaning of its bitflags would be required).
@@ -32,4 +33,5 @@ Limitations (will not be implemented unless a lot of interest is arised and docu
 - "Section total size" and "size of each region" are not checked for correctness when parsing.
 
 Hard limitations (Cannot or are to complex to be fixed):
+
 - 1:1 byte match on the V1 section of a `PreSwitchTicket` is not ensured.

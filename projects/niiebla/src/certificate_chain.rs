@@ -145,8 +145,13 @@ pub struct CertificateKey {
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone)]
 pub enum CertificateKeyValue {
+    /// The key is stored as RSA-4096 data.
     Rsa4096(Box<[u8; 512 + 4]>),
+
+    /// The key is stored as RSA-2048 data.
     Rsa2048(Box<[u8; 256 + 4]>),
+
+    /// The key is stored as ECCB223 data.
     EccB223(Box<[u8; 60]>),
 }
 
@@ -172,7 +177,7 @@ impl CertificateKeyValue {
         Ok(public_key)
     }
 
-    pub fn dump_kind_identifier<T: Write>(&self, mut stream: T) -> io::Result<()> {
+    fn dump_kind_identifier<T: Write>(&self, mut stream: T) -> io::Result<()> {
         stream.write_u32::<BE>(match self {
             Self::Rsa4096(_) => 0,
             Self::Rsa2048(_) => 1,
@@ -182,7 +187,7 @@ impl CertificateKeyValue {
         Ok(())
     }
 
-    pub fn dump_value<T: Write>(&self, mut stream: T) -> io::Result<()> {
+    fn dump_value<T: Write>(&self, mut stream: T) -> io::Result<()> {
         match self {
             Self::Rsa4096(value) => stream.write_all(value.as_slice())?,
             Self::Rsa2048(value) => stream.write_all(value.as_slice())?,

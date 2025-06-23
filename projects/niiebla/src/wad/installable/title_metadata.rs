@@ -70,7 +70,7 @@ impl InstallableWad {
     /// blobs.
     pub fn write_title_metadata_safe<T: Read + Write + Seek>(
         &mut self,
-        mut stream: T,
+        stream: T,
         new_title_metadata: &TitleMetadata,
     ) -> Result<(), InstallableWadError> {
         let mut stream = StreamPin::new(stream)?;
@@ -81,7 +81,7 @@ impl InstallableWad {
             self.write_title_metadata_raw(new_title_metadata, &mut stream)?;
         }
 
-        self.restore_contents(&mut stream, new_title_metadata, &contents);
+        self.restore_contents(&mut stream, new_title_metadata, &contents)?;
 
         Ok(())
     }

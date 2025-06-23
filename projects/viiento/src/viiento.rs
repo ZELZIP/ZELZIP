@@ -1,12 +1,9 @@
 //! TODO
 
-use niiebla::{
-    ContentSelector, CryptographicMethod, TitleMetadata, TitleMetadataContentEntryKind, Wad,
-};
-use std::fs::{File, OpenOptions};
+use niiebla::{CryptographicMethod, TitleMetadataContentEntryKind, Wad};
+use std::fs::File;
 use std::io;
-use std::io::{Cursor, Read, Seek, Write};
-use std::path::PathBuf;
+use std::io::{Cursor, Seek};
 
 #[allow(clippy::unwrap_used)]
 fn main() {
@@ -97,10 +94,10 @@ fn main() {
     */
 
     new_wad_file.rewind().unwrap();
-    let mut wad = Wad::try_new_installable(&new_wad_file).unwrap();
-    let mut ticket = wad.ticket(&new_wad_file).unwrap();
-    let mut tmd = wad.title_metadata(&new_wad_file).unwrap();
-    let mut cert_chain = wad.certificate_chain(&new_wad_file).unwrap();
+    let wad = Wad::try_new_installable(&new_wad_file).unwrap();
+    let ticket = wad.ticket(&new_wad_file).unwrap();
+    let tmd = wad.title_metadata(&new_wad_file).unwrap();
+    let _cert_chain = wad.certificate_chain(&new_wad_file).unwrap();
 
     println!("WAD NEW: {wad:?}");
     println!("{ticket:?}");

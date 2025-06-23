@@ -5,7 +5,6 @@ mod content;
 mod ticket;
 mod title_metadata;
 
-use crate::ContentSelector;
 use crate::TitleMetadata;
 use crate::certificate_chain::CertificateChainError;
 use crate::ticket::PreSwitchTicketError;
@@ -19,15 +18,28 @@ use thiserror::Error;
 use util::StreamPin;
 use util::WriteEx;
 
+/// A WAD that stores a title that can be installed into the system.
 #[derive(Debug)]
 pub struct InstallableWad {
+    /// The size of the header of the WAD.
     pub header_size: u32,
+
+    /// The kind of installation that the WAD will use.
     pub kind: InstallableWadKind,
-    pub version: u16,
+
+    /// The size of the certificate chain stored inside the WAD.
     pub certificate_chain_size: u32,
+
+    /// The size of the ticket stored inside the WAD.
     pub ticket_size: u32,
+
+    /// The size of the title metadata stored inside the WAD.
     pub title_metadata_size: u32,
+
+    /// The size of the content blobs stored inside the WAD.
     pub content_size: u32,
+
+    /// The size of the footer stored inside the WAD.
     pub footer_size: u32,
 }
 
@@ -53,7 +65,13 @@ impl InstallableWad {
     pub(crate) unsafe fn new<T: Read + Seek>(mut stream: T) -> Result<Self, InstallableWadError> {
         let header_size = stream.read_u32::<BE>()?;
         let kind = InstallableWadKind::new(&mut stream)?;
-        let version = stream.read_u16::<BE>()?;
+
+        let format_version = stream.read_u16::<BE>()?;
+
+        if format_version != 0 {
+            return Err(InstallableWadError::UnknownFormatVersion(format_version));
+        }
+
         let certificate_chain_size = stream.read_u32::<BE>()?;
 
         // Skip four reserved bytes
@@ -67,7 +85,6 @@ impl InstallableWad {
         Ok(Self {
             header_size,
             kind,
-            version,
             certificate_chain_size,
             ticket_size,
             title_metadata_size,
@@ -133,22 +150,18 @@ impl InstallableWad {
         title_metadata: &TitleMetadata,
         contents_store: &Option<ContentsStore>,
     ) -> Result<(), InstallableWadError> {
-        match contents_store {
-            Some(contents_store) => {
-                self.seek_content(
-                    &mut *stream,
-                    title_metadata,
-                    title_metadata.select_with_physical_position(
-                        contents_store.first_content_physical_position,
-                    ),
-                )?;
+        if let Some(contents_store) = contents_store {
+            self.seek_content(
+                &mut *stream,
+                title_metadata,
+                title_metadata
+                    .select_with_physical_position(contents_store.first_content_physical_position),
+            )?;
 
-                for bytes in &contents_store.contents {
-                    stream.write_all(&bytes)?;
-                    stream.align_zeroed(Self::SECTION_BOUNDARY)?;
-                }
+            for bytes in &contents_store.contents {
+                stream.write_all(bytes)?;
+                stream.align_zeroed(Self::SECTION_BOUNDARY)?;
             }
-            None => {}
         };
 
         Ok(())
@@ -181,11 +194,18 @@ pub enum InstallableWadError {
 
     #[error("Title metadata entry not found")]
     TitleMetadataEntryNotFoundError,
+
+    #[error("Unknown format version: {0}")]
+    UnknownFormatVersion(u16),
 }
 
+/// Ways a WAD can install a title.
 #[derive(Debug)]
 pub enum InstallableWadKind {
+    /// Install it as usual.
     Normal,
+
+    /// The title is a version of the [Wii's `boot2` bootloader](https://wiibrew.org/wiki/Boot2).
     Boot2,
 }
 

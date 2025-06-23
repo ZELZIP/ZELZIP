@@ -347,28 +347,34 @@ impl TitleMetadata {
         size
     }
 
+    /// Select the content with the given physical position.
     pub fn select_with_physical_position(&self, position: usize) -> ContentSelector {
         ContentSelector {
             method: ContentSelectorMethod::WithPhysicalPosition(position),
         }
     }
 
+    /// Select the first content with the given ID.
     pub fn select_with_id(&self, id: u32) -> ContentSelector {
         ContentSelector {
             method: ContentSelectorMethod::WithId(id),
         }
     }
 
+    /// Select the first content with the given index.
     pub fn select_with_index(&self, index: u16) -> ContentSelector {
         ContentSelector {
             method: ContentSelectorMethod::WithIndex(index),
         }
     }
 
+    /// Select the first content stored inside the title (given its physicial position).
     pub fn select_first(&self) -> ContentSelector {
         self.select_with_physical_position(0)
     }
 
+    /// Select the last content stored inside the title (given its physicial position). Be aware
+    /// that **this selection is lazy evaluated**.
     pub fn select_last(&self) -> ContentSelector {
         ContentSelector {
             method: ContentSelectorMethod::Last,
@@ -441,8 +447,14 @@ pub enum TitleMetadataPlatformData {
 
     /// The title is for the Nintendo 3DS
     Console3ds {
+        /// The size of the public save data section.
         public_save_data_size: u32,
+
+        /// The size of the private save data section.
         private_save_data_size: u32,
+
+        /// The SRL flags of the title.
+        // TODO(DISCOVER)
         srl_flag: u8,
     },
 
@@ -551,6 +563,7 @@ pub struct TitleMetadataContentEntry {
     pub hash: TitleMetadataContentEntryHashKind,
 }
 
+/// The hash of the content.
 #[derive(Clone, Debug)]
 pub enum TitleMetadataContentEntryHashKind {
     /// A SHA-1 hash.
@@ -639,10 +652,14 @@ impl TitleMetadataContentEntry {
     }
 }
 
+/// The extra data added by the V1 extension of the title metadata.
 #[derive(Debug)]
 pub struct TitleMetadataV1 {
-    content_entries_groups_hash_sha256: [u8; 32],
-    content_entries_groups: [TitleMetadataV1ContentEntriesGroup; 64],
+    /// The hash of all the contents entries groups stored at [Self::content_entries_groups].
+    pub content_entries_groups_hash_sha256: [u8; 32],
+
+    /// A set with all the content entries, with all their data default to zero.
+    pub content_entries_groups: [TitleMetadataV1ContentEntriesGroup; 64],
 }
 
 impl TitleMetadataV1 {
@@ -650,11 +667,11 @@ impl TitleMetadataV1 {
         let content_entries_groups_hash_sha256 = util::read_exact!(stream, 32)?;
         let mut content_entries_groups = [TitleMetadataV1ContentEntriesGroup::new_dummy(); 64];
 
-        for i in 0..64 {
-            content_entries_groups[i] = TitleMetadataV1ContentEntriesGroup::new(&mut stream)?;
+        for group in &mut content_entries_groups {
+            *group = TitleMetadataV1ContentEntriesGroup::new(&mut stream)?;
         }
 
-        Ok(TitleMetadataV1 {
+        Ok(Self {
             content_entries_groups_hash_sha256,
             content_entries_groups,
         })
@@ -671,11 +688,17 @@ impl TitleMetadataV1 {
     }
 }
 
+/// A group of content entries.
 #[derive(Copy, Clone, Debug)]
 pub struct TitleMetadataV1ContentEntriesGroup {
-    first_content_index: u16,
-    content_entries_in_the_group: u16,
-    content_entries_group_hash_sha256: [u8; 32],
+    /// The index of the first content that is inside the group.
+    pub first_content_index: u16,
+
+    /// The number of entries that the group has.
+    pub content_entries_in_the_group: u16,
+
+    /// The SHA-256 hash of the content entries stored inside the group.
+    pub content_entries_group_hash_sha256: [u8; 32],
 }
 
 impl TitleMetadataV1ContentEntriesGroup {

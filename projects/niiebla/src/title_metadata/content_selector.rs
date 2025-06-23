@@ -1,16 +1,11 @@
-use crate::CryptographicMethod;
-use crate::title_metadata::TitleMetadataError;
-use crate::title_metadata::{
-    TitleMetadataContentEntry, TitleMetadataContentEntryHashKind, TitleMetadataContentEntryKind,
-};
-use crate::wad::installable::{InstallableWad, InstallableWadError};
-use crate::{PreSwitchTicket, TitleMetadata};
-use sha1::{Digest, Sha1};
-use std::fs::File;
-use std::io::{Cursor, Read, Seek, SeekFrom, Write};
-use util::AesCbcStream;
-use util::{StreamPin, View, WriteEx};
+//! Implementation of the [ContentSelector] used in [TitleMetadata].
 
+use crate::TitleMetadata;
+use crate::title_metadata::TitleMetadataContentEntry;
+use crate::title_metadata::TitleMetadataError;
+
+/// Lazy evaluated selector of a content, crate one from the `select_` methods of a
+/// [TitleMetadata].
 #[derive(Clone, Copy)]
 pub struct ContentSelector {
     pub(super) method: ContentSelectorMethod,
@@ -33,6 +28,7 @@ impl ContentSelector {
         }
     }
 
+    /// Get the selected content entry.
     pub fn content_entry(
         &self,
         title_metadata: &TitleMetadata,
@@ -63,6 +59,7 @@ impl ContentSelector {
         .ok_or_else(TitleMetadataError::ContentNotFound)
     }
 
+    /// Get the physical position of the selected content entry.
     pub fn physical_position(
         &self,
         title_metadata: &TitleMetadata,
@@ -89,6 +86,7 @@ impl ContentSelector {
         .ok_or_else(TitleMetadataError::ContentNotFound)
     }
 
+    /// Get the ID of the selected content entry.
     pub fn id(&self, title_metadata: &TitleMetadata) -> Result<u32, TitleMetadataError> {
         Ok(match self.method {
             ContentSelectorMethod::WithId(id) => id,
@@ -100,6 +98,7 @@ impl ContentSelector {
         })
     }
 
+    /// Get the index of the selected content entry.
     pub fn index(&self, title_metadata: &TitleMetadata) -> Result<u16, TitleMetadataError> {
         Ok(match self.method {
             ContentSelectorMethod::WithIndex(index) => index,

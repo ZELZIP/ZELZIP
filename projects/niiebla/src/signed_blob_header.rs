@@ -44,12 +44,15 @@ impl SignedBlobHeader {
     /// Get the sizes of the signed blob header in bytes.
     pub fn size(&self) -> u32 {
         let size = match self.signature {
-            SignedBlobHeaderSignature::Rsa4096Sha1(_) => 512,
-            SignedBlobHeaderSignature::Rsa2048Sha1(_) => 256,
-            SignedBlobHeaderSignature::EcdsaSha1(_) => 60,
-            SignedBlobHeaderSignature::Rsa4096Sha256(_) => 512,
-            SignedBlobHeaderSignature::Rsa2048Sha256(_) => 256,
-            SignedBlobHeaderSignature::EcdsaSha256(_) => 60,
+            SignedBlobHeaderSignature::Rsa4096Sha1(_)
+            | SignedBlobHeaderSignature::Rsa4096Sha256(_) => 512,
+
+            SignedBlobHeaderSignature::Rsa2048Sha1(_)
+            | SignedBlobHeaderSignature::Rsa2048Sha256(_) => 256,
+
+            SignedBlobHeaderSignature::EcdsaSha1(_) | SignedBlobHeaderSignature::EcdsaSha256(_) => {
+                60
+            }
             SignedBlobHeaderSignature::HmacSha1(_) => 20,
         } + 68;
 

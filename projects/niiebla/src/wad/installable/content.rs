@@ -9,10 +9,9 @@ use sha1::{Digest, Sha1};
 use sha2::Sha256;
 use std::any::Any;
 use std::fs::File;
-use std::io;
-use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+use std::io::{Read, Seek, SeekFrom, Write};
 use util::AesCbcStream;
-use util::{StreamPin, View, WriteEx};
+use util::{StreamPin, View};
 
 impl InstallableWad {
     /// Seek the stream of the WAD to the start of the desired content.
@@ -39,7 +38,7 @@ impl InstallableWad {
             content_offset += util::align_to_boundary(content_entry.size, Self::SECTION_BOUNDARY);
         }
 
-        return Err(InstallableWadError::TitleMetadataEntryNotFoundError);
+        Err(InstallableWadError::TitleMetadataEntryNotFoundError)
     }
 
     /// Create a [View] into the desired content stored inside the WAD stream. Be aware that the
@@ -77,6 +76,7 @@ impl InstallableWad {
         )?)
     }
 
+    /// Get a builder to modify the contents stored in the WAD.
     pub fn modify_content<'a, 'b, 'c, T: Read + Write + Seek + Any + Sized>(
         &'a mut self,
         stream: &'b mut T,
@@ -92,12 +92,6 @@ impl InstallableWad {
             trim_if_is_file: false,
         }
     }
-}
-
-enum ModifyContentBuilderAction {
-    Replace(ContentSelector),
-    Add,
-    Delete(ContentSelector),
 }
 
 pub struct ModifyContentBuilder<'a, 'b, 'c, T: Read + Write + Seek + Any> {
@@ -162,6 +156,7 @@ impl<'c, T: Read + Write + Seek + Any> ModifyContentBuilder<'_, '_, 'c, T> {
         Ok(())
     }
 
+    #[allow(clippy::expect_used)]
     pub fn add<S: Read + Write + Seek>(
         &mut self,
         mut new_data: S,
@@ -192,11 +187,11 @@ impl<'c, T: Read + Write + Seek + Any> ModifyContentBuilder<'_, '_, 'c, T> {
 
         self.wad
             .seek_content(&mut wad_stream, title_metadata, content_selector)?;
-        wad_stream.seek_relative(content_selector.content_entry(title_metadata)?.size as i64);
+        wad_stream.seek_relative(content_selector.content_entry(title_metadata)?.size as i64)?;
         wad_stream.align_position(InstallableWad::SECTION_BOUNDARY)?;
 
         let mut new_data_vec = vec![];
-        new_data.read_to_end(&mut new_data_vec);
+        new_data.read_to_end(&mut new_data_vec)?;
 
         let hash = if title_metadata.version_1_extension.is_some() {
             TitleMetadataContentEntryHashKind::Version1(Sha256::digest(&new_data_vec).into())
@@ -221,7 +216,7 @@ impl<'c, T: Read + Write + Seek + Any> ModifyContentBuilder<'_, '_, 'c, T> {
             cryptographic_method,
         )?;
 
-        wad_stream.write(&mut new_data_vec)?;
+        wad_stream.write(&new_data_vec)?;
 
         // Modifing the title metadata must be done at the end to avoid issues with the position of
         // the stream (writing on the start of the WAD by accident)
@@ -260,14 +255,12 @@ impl<'c, T: Read + Write + Seek + Any> ModifyContentBuilder<'_, '_, 'c, T> {
         self.wad
             .restore_contents(&mut wad_stream, title_metadata, &contents)?;
 
-        let wad_stream = wad_stream.into_inner();
+        if self.trim_if_is_file
+            && let Some(file) = (self.wad_stream as &mut dyn Any).downcast_mut::<File>()
+        {
+            let len = file.stream_position()?;
 
-        if self.trim_if_is_file {
-            if let Some(file) = (self.wad_stream as &mut dyn Any).downcast_mut::<File>() {
-                let len = file.stream_position()?;
-
-                file.set_len(len)?;
-            }
+            file.set_len(len)?;
         }
 
         self.sync_wad_header_content_size(title_metadata)?;
@@ -275,6 +268,7 @@ impl<'c, T: Read + Write + Seek + Any> ModifyContentBuilder<'_, '_, 'c, T> {
         Ok(())
     }
 
+    #[allow(clippy::expect_used)]
     pub fn replace<S: Read + Write + Seek>(
         &mut self,
         mut new_data: S,
@@ -292,14 +286,14 @@ impl<'c, T: Read + Write + Seek + Any> ModifyContentBuilder<'_, '_, 'c, T> {
         let mut wad_stream = StreamPin::new(&mut self.wad_stream)?;
         let physical_position = content_selector.physical_position(title_metadata)?;
 
-        let mut contents =
+        let contents =
             self.wad
                 .store_contents(&mut wad_stream, title_metadata, physical_position + 1)?;
 
         let mut new_data_vec = vec![];
-        new_data.read_to_end(&mut new_data_vec);
+        new_data.read_to_end(&mut new_data_vec)?;
 
-        let mut title_metadata_entry = &mut title_metadata.content_chunk_entries[physical_position];
+        let title_metadata_entry = &mut title_metadata.content_chunk_entries[physical_position];
 
         let hash = if title_metadata.version_1_extension.is_some() {
             TitleMetadataContentEntryHashKind::Version1(Sha256::digest(&new_data_vec).into())
@@ -335,14 +329,14 @@ impl<'c, T: Read + Write + Seek + Any> ModifyContentBuilder<'_, '_, 'c, T> {
             cryptographic_method,
         )?;
 
-        wad_stream.write(&mut new_data_vec)?;
+        wad_stream.write(&new_data_vec)?;
 
-        let mut wad_stream = wad_stream.into_inner();
+        let wad_stream = wad_stream.into_inner();
 
         wad_stream.align_position(InstallableWad::SECTION_BOUNDARY)?;
 
         self.wad
-            .restore_contents(&mut wad_stream, title_metadata, &contents)?;
+            .restore_contents(wad_stream, title_metadata, &contents)?;
 
         self.sync_wad_header_content_size(title_metadata)?;
 

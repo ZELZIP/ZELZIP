@@ -1,10 +1,10 @@
+//! Implementation of the Ticket V1 extension.
+
 use crate::title_id::TitleId;
 use byteorder::{BE, ReadBytesExt, WriteBytesExt};
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use thiserror::Error;
 use util::StreamPin;
-
-use crate::ticket::PreSwitchTicketError;
 
 // WARNING! HAZMAT! ACHTUNG! PELIGRO! THIS FORMAT IS REALLY SHITTY SO THIS IS
 // THE CLEANEST WAY TO WRITE THIS AND PRESERVE PROPER TYPING.
@@ -17,8 +17,13 @@ use crate::ticket::PreSwitchTicketError;
 // Now, only god knows it" - Kutu 2025-06-19 21:12:52Z
 
 #[derive(Debug)]
+/// Extra data available on V1 tickets.
 pub struct PreSwitchTicketV1 {
+    /// The set of data sections present on the V1 ticket.
     pub sections: Vec<PreSwitchTicketV1Section>,
+
+    // TODO(DISCOVER)
+    /// Extra flags for the V1 ticket itself, its meaning is still unknown.
     pub flags: u32,
 }
 
@@ -26,7 +31,7 @@ impl PreSwitchTicketV1 {
     const HEADER_SIZE: u16 = 20;
     const SECTION_HEADER_SIZE: u16 = 20;
 
-    pub fn new<T: Read + Seek>(mut stream: T) -> Result<PreSwitchTicketV1, PreSwitchTicketV1Error> {
+    pub(super) fn new<T: Read + Seek>(stream: T) -> Result<Self, PreSwitchTicketV1Error> {
         let mut stream = StreamPin::new(stream)?;
 
         let version = stream.read_u16::<BE>()?;
@@ -63,7 +68,7 @@ impl PreSwitchTicketV1 {
             sections.push(PreSwitchTicketV1Section::new(&mut stream)?);
         }
 
-        let v1 = PreSwitchTicketV1 { sections, flags };
+        let v1 = Self { sections, flags };
 
         if v1_data_size != v1.size() {
             return Err(PreSwitchTicketV1Error::UnknownTicketV1TotalSize(
@@ -74,14 +79,14 @@ impl PreSwitchTicketV1 {
         Ok(v1)
     }
 
-    pub(crate) fn dump<T: Write + Seek>(&self, mut stream: T) -> io::Result<()> {
+    pub(super) fn dump<T: Write + Seek>(&self, stream: T) -> io::Result<()> {
         let mut stream = StreamPin::new(stream)?;
 
         // Ticket V1 version
         stream.write_u16::<BE>(1)?;
 
         stream.write_u16::<BE>(Self::HEADER_SIZE)?;
-        stream.write_u32::<BE>(self.size());
+        stream.write_u32::<BE>(self.size())?;
 
         // Skip this for now as we cannot know the position of the first section yet
         let first_section_byte_header_position = stream.relative_position()? as u64;
@@ -94,7 +99,7 @@ impl PreSwitchTicketV1 {
         let mut start_of_records = vec![];
         for section in &self.sections {
             start_of_records.push(stream.relative_position()? as u32);
-            section.records.dump(&mut stream);
+            section.records.dump(&mut stream)?;
         }
 
         for (i, section) in self.sections.iter().enumerate() {
@@ -127,7 +132,7 @@ impl PreSwitchTicketV1 {
         Ok(())
     }
 
-    pub fn size(&self) -> u32 {
+    pub(super) fn size(&self) -> u32 {
         let mut size = Self::HEADER_SIZE as u32
             + (Self::SECTION_HEADER_SIZE as u32 * self.sections.len() as u32);
 
@@ -140,6 +145,7 @@ impl PreSwitchTicketV1 {
 }
 
 #[derive(Error, Debug)]
+#[allow(missing_docs)]
 pub enum PreSwitchTicketV1Error {
     #[error("Unknown ticket v1 version: {0}")]
     UnknownTicketV1Version(u16),
@@ -164,17 +170,32 @@ pub enum PreSwitchTicketV1Error {
 }
 
 #[derive(Debug)]
+/// The data of a section inside a V1 ticket.
 pub struct PreSwitchTicketV1Section {
+    /// The records inside the section.
     pub records: PreSwitchTicketV1Records,
+
+    /// Extra flags for the V1 ticket section itself, its meaning is still unknown.
     pub flags: u16,
 }
 
 #[derive(Debug)]
+/// The set of records a section can have. Due to technical limitations on the format itself, all
+/// records in a section must be of the same kind.
 pub enum PreSwitchTicketV1Records {
+    /// A set of "permanent" records.
     Permanent(Vec<PreSwitchTicketV1RecordPermanent>),
+
+    /// A set of "subscription" records.
     Subscription(Vec<PreSwitchTicketV1RecordSubscription>),
+
+    /// A set of "content" records.
     Content(Vec<PreSwitchTicketV1RecordContent>),
+
+    /// A set of "content consumption" records.
     ContentConsumption(Vec<PreSwitchTicketV1RecordContentConsumption>),
+
+    /// A set of "access title" records.
     AccessTitle(Vec<PreSwitchTicketV1RecordAccessTitle>),
 }
 
@@ -205,27 +226,27 @@ impl PreSwitchTicketV1Records {
 
     pub(crate) fn dump<T: Write>(&self, mut stream: T) -> io::Result<()> {
         match self {
-            PreSwitchTicketV1Records::Permanent(data) => {
+            Self::Permanent(data) => {
                 for record in data {
                     record.reference_id.dump(&mut stream)?;
                 }
             }
 
-            PreSwitchTicketV1Records::Subscription(data) => {
+            Self::Subscription(data) => {
                 for record in data {
                     stream.write_u32::<BE>(record.expiration_time)?;
                     record.reference_id.dump(&mut stream)?;
                 }
             }
 
-            PreSwitchTicketV1Records::Content(data) => {
+            Self::Content(data) => {
                 for record in data {
                     stream.write_u32::<BE>(record.offset_content_index)?;
                     stream.write_all(&record.access_mask)?;
                 }
             }
 
-            PreSwitchTicketV1Records::ContentConsumption(data) => {
+            Self::ContentConsumption(data) => {
                 for record in data {
                     stream.write_u16::<BE>(record.content_index)?;
                     stream.write_u16::<BE>(record.limit_code)?;
@@ -233,7 +254,7 @@ impl PreSwitchTicketV1Records {
                 }
             }
 
-            PreSwitchTicketV1Records::AccessTitle(data) => {
+            Self::AccessTitle(data) => {
                 for record in data {
                     record.title_id.dump(&mut stream)?;
                     stream.write_u64::<BE>(record.title_mask)?;
@@ -246,9 +267,7 @@ impl PreSwitchTicketV1Records {
 }
 
 impl PreSwitchTicketV1Section {
-    fn new<T: Read + Seek>(
-        mut stream: &mut StreamPin<T>,
-    ) -> Result<PreSwitchTicketV1Section, PreSwitchTicketV1Error> {
+    fn new<T: Read + Seek>(stream: &mut StreamPin<T>) -> Result<Self, PreSwitchTicketV1Error> {
         let section_records_offset = stream.read_u32::<BE>()?;
         let number_of_records = stream.read_u32::<BE>()?;
 
@@ -326,23 +345,27 @@ impl PreSwitchTicketV1Section {
         }
 
         stream.seek(SeekFrom::Start(next_section_position))?;
-        Ok(PreSwitchTicketV1Section { records, flags })
+        Ok(Self { records, flags })
     }
 }
 
-#[derive(Debug)]
+/// A reference ID, its meaning and use are still unknown.
 // TODO(DISCOVER)
+#[derive(Debug)]
 pub struct PreSwitchTicketV1RefereceId {
+    /// The ID value.
     pub id: [u8; 16],
+
+    /// Attributes attached to the ID.
     pub attributes: u32,
 }
 
 impl PreSwitchTicketV1RefereceId {
-    fn new<T: Read>(mut stream: T) -> Result<PreSwitchTicketV1RefereceId, PreSwitchTicketV1Error> {
+    fn new<T: Read>(mut stream: T) -> Result<Self, PreSwitchTicketV1Error> {
         let id = util::read_exact!(stream, 16)?;
         let attributes = stream.read_u32::<BE>()?;
 
-        Ok(PreSwitchTicketV1RefereceId { id, attributes })
+        Ok(Self { id, attributes })
     }
 
     fn dump<T: Write>(&self, mut stream: T) -> io::Result<()> {
@@ -353,45 +376,62 @@ impl PreSwitchTicketV1RefereceId {
     }
 }
 
-#[derive(Debug)]
+/// A record of kind "permanent", its meaning is still unknown.
 // TODO(DISCOVER)
+#[derive(Debug)]
 pub struct PreSwitchTicketV1RecordPermanent {
+    /// The reference ID attach to the record.
     pub reference_id: PreSwitchTicketV1RefereceId,
 }
 
+/// A record of kind "subscription", its meaning is still unknown.
 #[derive(Debug)]
 // TODO(DISCOVER)
 pub struct PreSwitchTicketV1RecordSubscription {
+    /// The time for the record to expire (measured in UNIX time).
     pub expiration_time: u32,
+
+    /// The reference ID attach to the record.
     pub reference_id: PreSwitchTicketV1RefereceId,
 }
 
+/// A record of kind "content", its meaning is still unknown.
 #[derive(Debug)]
 // TODO(DISCOVER)
 pub struct PreSwitchTicketV1RecordContent {
+    /// The index offset of the content.
     // TODO(DISCOVER)
     pub offset_content_index: u32,
 
+    /// The access mark.
     // TODO(DISCOVER)
     pub access_mask: [u8; 128],
 }
 
+/// A record of kind "content consumption", its meaning is still unknown.
 #[derive(Debug)]
 // TODO(DISCOVER)
 pub struct PreSwitchTicketV1RecordContentConsumption {
+    /// The index of the content.
     // TODO(DISCOVER)
     pub content_index: u16,
 
+    /// The kind of limit applied.
     // TODO(DISCOVER)
     pub limit_code: u16,
 
+    /// The value attached to the limit kind.
     // TODO(DISCOVER)
     pub limit_value: u32,
 }
 
+/// A record of kind "access title", its meaning is still unknown.
 #[derive(Debug)]
 // TODO(DISCOVER)
 pub struct PreSwitchTicketV1RecordAccessTitle {
+    /// The title ID whose access has been given.
     pub title_id: TitleId,
+
+    /// The mask of title IDs.
     pub title_mask: u64,
 }

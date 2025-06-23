@@ -20,8 +20,11 @@ use util::WriteEx;
 
 pub mod v1;
 
+/// The different cryptographic methods that can be used to decrypt the content stored inside a
+/// title.
 #[derive(Copy, Clone)]
 pub enum CryptographicMethod {
+    /// The method used in the Nintendo Wii (and Wii U vWii) platform.
     Wii,
 }
 

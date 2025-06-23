@@ -57,13 +57,13 @@ impl TitleId {
 
     /// Get a wrapper that can display the title ID with ASCII characters in its lower half, if the
     /// character is not visible a fallback to the normal display will be made.
-    pub fn display_ascii(&self) -> TitleIdAsciiDisplay {
+    pub fn display_ascii(&self) -> TitleIdAsciiDisplay<'_> {
         TitleIdAsciiDisplay(self)
     }
 
     /// Wrapper that can display the title ID with custom display values for well-known IDs (IOS,
     /// BOOT2, vWii ancast images, etc).
-    pub fn display_wii_platform(&self) -> TitleIdWiiPlatformDisplay {
+    pub fn display_wii_platform(&self) -> TitleIdWiiPlatformDisplay<'_> {
         TitleIdWiiPlatformDisplay(self)
     }
 }
