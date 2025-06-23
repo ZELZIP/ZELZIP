@@ -3,7 +3,7 @@ use std::io::Cursor;
 use std::io::Read;
 
 #[test]
-fn test_view_read() {
+fn read() {
     let mut buffer = Cursor::new(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     buffer.seek_relative(4).unwrap();
 
@@ -16,7 +16,7 @@ fn test_view_read() {
 }
 
 #[test]
-fn test_view_read_insufficient_len() {
+fn read_insufficient_len() {
     let mut buffer = Cursor::new(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     buffer.seek_relative(4).unwrap();
 
@@ -30,7 +30,7 @@ fn test_view_read_insufficient_len() {
 }
 
 #[test]
-fn test_view_read_insufficient_buffer_size() {
+fn read_insufficient_buffer_size() {
     let buffer = Cursor::new(vec![1, 2, 3]);
     let mut view = View::new(buffer, 100).unwrap();
 

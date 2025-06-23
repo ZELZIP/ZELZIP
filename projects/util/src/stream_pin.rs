@@ -35,8 +35,8 @@ impl<T: Seek> StreamPin<T> {
         Ok(self.stream_position()? as i64 - self.start_position as i64)
     }
 
-    pub fn seek_from_pin(&mut self, step: u64) -> io::Result<u64> {
-        self.seek(SeekFrom::Start(self.start_position + step))
+    pub fn seek_from_pin(&mut self, step: i64) -> io::Result<u64> {
+        self.seek(SeekFrom::Start((self.start_position as i64 + step) as u64))
     }
 
     /// Align the position of the stream relative to the pinned position.
@@ -93,11 +93,8 @@ mod tests {
     use byteorder::ReadBytesExt;
     use std::io::Cursor;
 
-    // TODO(IMPLEMENT): Tests for going behind.
-    // And for going relative.
-
     #[test]
-    fn test_go_to_pin() {
+    fn go_to_pin() {
         let mut stream = Cursor::new([0, 1, 2, 3, 4]);
         stream.seek_relative(1).unwrap();
 
@@ -112,7 +109,7 @@ mod tests {
     }
 
     #[test]
-    fn test_align_position_zero() {
+    fn align_position_zero() {
         let mut stream = Cursor::new([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
         stream.seek_relative(1).unwrap();
 
@@ -125,7 +122,7 @@ mod tests {
     }
 
     #[test]
-    fn test_align_position_aligned_and_non_zero() {
+    fn align_position_aligned_and_non_zero() {
         let mut stream = Cursor::new([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
         stream.seek_relative(1).unwrap();
 
@@ -139,7 +136,7 @@ mod tests {
     }
 
     #[test]
-    fn test_align_position_unaligned() {
+    fn align_position_unaligned() {
         let mut stream = Cursor::new([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
         stream.seek_relative(1).unwrap();
 
@@ -153,7 +150,7 @@ mod tests {
     }
 
     #[test]
-    fn test_align_zeroed() {
+    fn align_zeroed() {
         let mut stream = Cursor::new([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
         stream.seek_relative(1).unwrap();
 
@@ -168,5 +165,19 @@ mod tests {
         let data = pin.into_inner().into_inner();
         assert_eq!(data[3], 0);
         assert_eq!(data[4], 0);
+    }
+
+    #[test]
+    fn go_relative() {
+        let mut stream = Cursor::new([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        stream.seek_relative(5).unwrap();
+
+        let mut pin = StreamPin::new(stream).unwrap();
+
+        pin.seek_from_pin(2);
+        assert_eq!(pin.read_u8().unwrap(), 7);
+
+        pin.seek_from_pin(-3);
+        assert_eq!(pin.read_u8().unwrap(), 2);
     }
 }

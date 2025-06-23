@@ -21,13 +21,26 @@ pub(super) enum ContentSelectorMethod {
     WithPhysicalPosition(usize),
     WithIndex(u16),
     WithId(u32),
+    Last,
 }
 
 impl ContentSelector {
+    fn get_last(title_metadata: &TitleMetadata) -> Self {
+        Self {
+            method: ContentSelectorMethod::WithPhysicalPosition(
+                title_metadata.content_chunk_entries.len() - 1,
+            ),
+        }
+    }
+
     pub fn content_entry(
         &self,
         title_metadata: &TitleMetadata,
     ) -> Result<TitleMetadataContentEntry, TitleMetadataError> {
+        if let ContentSelectorMethod::Last = self.method {
+            return Self::get_last(title_metadata).content_entry(title_metadata);
+        }
+
         (match self.method {
             ContentSelectorMethod::WithPhysicalPosition(pos) => {
                 Some(title_metadata.content_chunk_entries[pos].clone())
@@ -44,6 +57,8 @@ impl ContentSelector {
                 .iter()
                 .find(|entry| entry.index == index)
                 .cloned(),
+
+            ContentSelectorMethod::Last => unreachable!(),
         })
         .ok_or_else(TitleMetadataError::ContentNotFound)
     }
@@ -52,6 +67,10 @@ impl ContentSelector {
         &self,
         title_metadata: &TitleMetadata,
     ) -> Result<usize, TitleMetadataError> {
+        if let ContentSelectorMethod::Last = self.method {
+            return Self::get_last(title_metadata).physical_position(title_metadata);
+        }
+
         (match self.method {
             ContentSelectorMethod::WithPhysicalPosition(pos) => Some(pos),
 
@@ -64,6 +83,8 @@ impl ContentSelector {
                 .content_chunk_entries
                 .iter()
                 .position(|entry| entry.index == index),
+
+            ContentSelectorMethod::Last => unreachable!(),
         })
         .ok_or_else(TitleMetadataError::ContentNotFound)
     }
@@ -71,6 +92,8 @@ impl ContentSelector {
     pub fn id(&self, title_metadata: &TitleMetadata) -> Result<u32, TitleMetadataError> {
         Ok(match self.method {
             ContentSelectorMethod::WithId(id) => id,
+
+            ContentSelectorMethod::Last => Self::get_last(title_metadata).id(title_metadata)?,
 
             ContentSelectorMethod::WithPhysicalPosition(_)
             | ContentSelectorMethod::WithIndex(_) => self.content_entry(title_metadata)?.id,
@@ -80,6 +103,8 @@ impl ContentSelector {
     pub fn index(&self, title_metadata: &TitleMetadata) -> Result<u16, TitleMetadataError> {
         Ok(match self.method {
             ContentSelectorMethod::WithIndex(index) => index,
+
+            ContentSelectorMethod::Last => Self::get_last(title_metadata).index(title_metadata)?,
 
             ContentSelectorMethod::WithPhysicalPosition(_) | ContentSelectorMethod::WithId(_) => {
                 self.content_entry(title_metadata)?.index

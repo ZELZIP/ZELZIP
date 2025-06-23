@@ -5,7 +5,7 @@ use std::io::Read;
 // Seeking to an negative offset with [SeekFrom::Start] is impossible
 
 #[test]
-fn test_view_seek_start() {
+fn seek_start() {
     let buffer = Cursor::new(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
     let mut view = View::new(buffer, 3).unwrap();
@@ -19,7 +19,7 @@ fn test_view_seek_start() {
 }
 
 #[test]
-fn test_view_seek_start_out_of_bounds() {
+fn seek_start_out_of_bounds() {
     let buffer = Cursor::new(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
     let mut view = View::new(buffer, 3).unwrap();

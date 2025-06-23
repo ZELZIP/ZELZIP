@@ -102,7 +102,7 @@ pub struct PreSwitchTicket {
     pub limit_entries: [PreSwitchTicketLimitEntry; 8],
 
     /// Extra data only present on the v1 version of a ticket.
-    pub version_1_extension: Option<v1::PreSwitchTicketV1ExtraData>,
+    pub version_1_extension: Option<v1::PreSwitchTicketV1>,
 }
 
 impl PreSwitchTicket {
@@ -164,7 +164,7 @@ impl PreSwitchTicket {
 
         let version_1_extension = match format_version {
             0 => None,
-            1 => Some(v1::PreSwitchTicketV1ExtraData::new(&mut stream)?),
+            1 => Some(v1::PreSwitchTicketV1::new(&mut stream)?),
 
             _ => return Err(PreSwitchTicketError::IncompatibleVersion(format_version)),
         };

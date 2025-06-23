@@ -39,7 +39,7 @@ impl InstallableWad {
             content_offset += util::align_to_boundary(content_entry.size, Self::SECTION_BOUNDARY);
         }
 
-        unreachable!()
+        return Err(InstallableWadError::TitleMetadataEntryNotFoundError);
     }
 
     /// Create a [View] into the desired content stored inside the WAD stream. Be aware that the
@@ -90,7 +90,6 @@ impl InstallableWad {
             ticket: None,
             cryptographic_method: None,
             trim_if_is_file: false,
-            safe: false,
         }
     }
 }
@@ -110,11 +109,10 @@ pub struct ModifyContentBuilder<'a, 'b, 'c, T: Read + Write + Seek + Any> {
     ticket: Option<&'c PreSwitchTicket>,
     cryptographic_method: Option<CryptographicMethod>,
     trim_if_is_file: bool,
-    safe: bool,
 }
 
 impl<'c, T: Read + Write + Seek + Any> ModifyContentBuilder<'_, '_, 'c, T> {
-    pub fn crypotgraphy(
+    pub fn set_cryptography(
         &mut self,
         ticket: &'c PreSwitchTicket,
         crytographic_method: CryptographicMethod,
@@ -149,18 +147,18 @@ impl<'c, T: Read + Write + Seek + Any> ModifyContentBuilder<'_, '_, 'c, T> {
         self
     }
 
-    pub fn safe(&mut self, flag: bool) -> &mut Self {
-        self.safe = flag;
-
-        self
-    }
-
-    pub fn replace<S: Read + Write + Seek>(
+    fn sync_wad_header_content_size(
         &mut self,
-        new_data: S,
-        content_selector: ContentSelector,
         title_metadata: &mut TitleMetadata,
     ) -> Result<(), InstallableWadError> {
+        self.wad.content_size = title_metadata
+            .content_chunk_entries
+            .iter()
+            .fold(0, |acc, entry| acc + entry.size as u32);
+
+        self.wad_stream.rewind()?;
+        self.wad.dump(&mut self.wad_stream)?;
+
         Ok(())
     }
 
@@ -169,26 +167,41 @@ impl<'c, T: Read + Write + Seek + Any> ModifyContentBuilder<'_, '_, 'c, T> {
         mut new_data: S,
         title_metadata: &mut TitleMetadata,
     ) -> Result<(), InstallableWadError> {
-        // TODO ADD LOGGING (INFO), ADD IS ALWAYS A SAFE OPERATION
+        let id = self
+            .new_id
+            .expect("Missing ID, use `.set_id()` on the builder");
 
-        // TODO: Change this
-        let id = self.new_id.unwrap();
-        let index = self.new_index.unwrap();
-        let kind = self.new_kind.unwrap();
+        let index = self
+            .new_index
+            .expect("Missing index, use `.set_index()` on the builder");
 
-        let ticket = self.ticket.unwrap();
-        let cryptographic_method = self.cryptographic_method.unwrap();
+        let kind = self
+            .new_kind
+            .expect("Missing kind, use `.set_kind()` on the builder");
+
+        let ticket = self
+            .ticket
+            .expect("Missing ticket, use `.set_cryptography()` on the builder");
+
+        let cryptographic_method = self
+            .cryptographic_method
+            .expect("Missing cryptographic method, use `.set_cryptography()` on the builder");
 
         let mut wad_stream = StreamPin::new(&mut self.wad_stream)?;
         let content_selector = title_metadata.select_last();
+
+        self.wad
+            .seek_content(&mut wad_stream, title_metadata, content_selector)?;
+        wad_stream.seek_relative(content_selector.content_entry(title_metadata)?.size as i64);
+        wad_stream.align_position(InstallableWad::SECTION_BOUNDARY)?;
 
         let mut new_data_vec = vec![];
         new_data.read_to_end(&mut new_data_vec);
 
         let hash = if title_metadata.version_1_extension.is_some() {
-            TitleMetadataContentEntryHashKind::Version0(Sha1::digest(&new_data_vec).into())
-        } else {
             TitleMetadataContentEntryHashKind::Version1(Sha256::digest(&new_data_vec).into())
+        } else {
+            TitleMetadataContentEntryHashKind::Version0(Sha1::digest(&new_data_vec).into())
         };
 
         let entry = TitleMetadataContentEntry {
@@ -201,14 +214,119 @@ impl<'c, T: Read + Write + Seek + Any> ModifyContentBuilder<'_, '_, 'c, T> {
 
         title_metadata.content_chunk_entries.push(entry);
 
+        let mut wad_stream = ticket.cryptographic_stream(
+            &mut wad_stream,
+            title_metadata,
+            content_selector,
+            cryptographic_method,
+        )?;
+
+        wad_stream.write(&mut new_data_vec)?;
+
+        // Modifing the title metadata must be done at the end to avoid issues with the position of
+        // the stream (writing on the start of the WAD by accident)
+        let mut wad_stream = wad_stream.into_inner();
+        self.wad
+            .write_title_metadata_safe(&mut wad_stream, title_metadata)?;
+
+        self.sync_wad_header_content_size(title_metadata)?;
+
+        Ok(())
+    }
+
+    pub fn remove(
+        &mut self,
+        content_selector: ContentSelector,
+        title_metadata: &mut TitleMetadata,
+    ) -> Result<(), InstallableWadError> {
+        let mut wad_stream = StreamPin::new(&mut self.wad_stream)?;
+        let physical_position = content_selector.physical_position(title_metadata)?;
+
+        let mut contents =
+            self.wad
+                .store_contents(&mut wad_stream, title_metadata, physical_position + 1)?;
+
+        if let Some(ref mut contents) = contents {
+            contents.first_content_physical_position -= 1;
+        }
+
+        title_metadata
+            .content_chunk_entries
+            .remove(physical_position);
+
+        self.wad
+            .write_title_metadata_safe(&mut wad_stream, title_metadata)?;
+
+        self.wad
+            .restore_contents(&mut wad_stream, title_metadata, &contents)?;
+
+        let wad_stream = wad_stream.into_inner();
+
+        if self.trim_if_is_file {
+            if let Some(file) = (self.wad_stream as &mut dyn Any).downcast_mut::<File>() {
+                let len = file.stream_position()?;
+
+                file.set_len(len)?;
+            }
+        }
+
+        self.sync_wad_header_content_size(title_metadata)?;
+
+        Ok(())
+    }
+
+    pub fn replace<S: Read + Write + Seek>(
+        &mut self,
+        mut new_data: S,
+        content_selector: ContentSelector,
+        title_metadata: &mut TitleMetadata,
+    ) -> Result<(), InstallableWadError> {
+        let ticket = self
+            .ticket
+            .expect("Missing ticket, use `.set_cryptography()` on the builder");
+
+        let cryptographic_method = self
+            .cryptographic_method
+            .expect("Missing cryptographic method, use `.set_cryptography()` on the builder");
+
+        let mut wad_stream = StreamPin::new(&mut self.wad_stream)?;
+        let physical_position = content_selector.physical_position(title_metadata)?;
+
+        let mut contents =
+            self.wad
+                .store_contents(&mut wad_stream, title_metadata, physical_position + 1)?;
+
+        let mut new_data_vec = vec![];
+        new_data.read_to_end(&mut new_data_vec);
+
+        let mut title_metadata_entry = &mut title_metadata.content_chunk_entries[physical_position];
+
+        let hash = if title_metadata.version_1_extension.is_some() {
+            TitleMetadataContentEntryHashKind::Version1(Sha256::digest(&new_data_vec).into())
+        } else {
+            TitleMetadataContentEntryHashKind::Version0(Sha1::digest(&new_data_vec).into())
+        };
+
+        title_metadata_entry.hash = hash;
+        title_metadata_entry.size = new_data_vec.len() as u64;
+
+        if let Some(id) = self.new_id {
+            title_metadata_entry.id = id;
+        }
+
+        if let Some(index) = self.new_index {
+            title_metadata_entry.index = index;
+        }
+
+        if let Some(kind) = self.new_kind {
+            title_metadata_entry.kind = kind;
+        }
+
         self.wad
             .write_title_metadata_safe(&mut wad_stream, title_metadata)?;
 
         self.wad
             .seek_content(&mut wad_stream, title_metadata, content_selector)?;
-
-        wad_stream.seek_relative(content_selector.content_entry(title_metadata)?.size as i64);
-        wad_stream.align_position(InstallableWad::SECTION_BOUNDARY)?;
 
         let mut wad_stream = ticket.cryptographic_stream(
             &mut wad_stream,
@@ -219,14 +337,15 @@ impl<'c, T: Read + Write + Seek + Any> ModifyContentBuilder<'_, '_, 'c, T> {
 
         wad_stream.write(&mut new_data_vec)?;
 
-        Ok(())
-    }
+        let mut wad_stream = wad_stream.into_inner();
 
-    pub fn delete(
-        &mut self,
-        content_selector: ContentSelector,
-        title_metadata: &mut TitleMetadata,
-    ) -> Result<(), InstallableWadError> {
+        wad_stream.align_position(InstallableWad::SECTION_BOUNDARY)?;
+
+        self.wad
+            .restore_contents(&mut wad_stream, title_metadata, &contents)?;
+
+        self.sync_wad_header_content_size(title_metadata)?;
+
         Ok(())
     }
 }

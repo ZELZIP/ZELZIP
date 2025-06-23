@@ -104,7 +104,7 @@ mod tests {
     use std::io::Read;
 
     #[test]
-    fn test_recall_view_read() {
+    fn read() {
         let mut buffer = Cursor::new(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
         {
@@ -118,7 +118,7 @@ mod tests {
     }
 
     #[test]
-    fn test_recall_view_into_inner() {
+    fn into_inner() {
         let mut buffer = Cursor::new(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
         let recall_view = RecallView::new(&mut buffer, 5).unwrap();
         let _buffer = recall_view.into_inner().unwrap();

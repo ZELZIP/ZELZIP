@@ -26,19 +26,19 @@ mod tests {
     use std::io::Cursor;
 
     #[test]
-    fn test_read_bool_true() {
+    fn read_bool_true() {
         let mut buffer = Cursor::new([1, 255]);
         assert!(buffer.read_bool().unwrap())
     }
 
     #[test]
-    fn test_read_bool_false() {
+    fn read_bool_false() {
         let mut buffer = Cursor::new([0, 255]);
         assert!(!buffer.read_bool().unwrap())
     }
 
     #[test]
-    fn test_read_bool_invalid() {
+    fn read_bool_invalid() {
         let mut buffer = Cursor::new([77, 255]);
         assert!(buffer.read_bool().is_err())
     }

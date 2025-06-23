@@ -83,7 +83,7 @@ pub struct TitleMetadata {
     pub platform_data: TitleMetadataPlatformData,
 
     /// Extra data only present on the v1 version of a title metadata.
-    pub version_1_extension: Option<TitleMetadataV1ExtraData>,
+    pub version_1_extension: Option<TitleMetadataV1>,
 
     /// Entries to the different content chunks.
     pub content_chunk_entries: Vec<TitleMetadataContentEntry>,
@@ -172,7 +172,7 @@ impl TitleMetadata {
 
         let version_1_extension = match format_version {
             0 => None,
-            1 => Some(TitleMetadataV1ExtraData::new(&mut stream)?),
+            1 => Some(TitleMetadataV1::new(&mut stream)?),
             version => return Err(TitleMetadataError::IncompatibleVersion(version)),
         };
 
@@ -370,7 +370,9 @@ impl TitleMetadata {
     }
 
     pub fn select_last(&self) -> ContentSelector {
-        self.select_with_physical_position(self.content_chunk_entries.len() - 1)
+        ContentSelector {
+            method: ContentSelectorMethod::Last,
+        }
     }
 }
 
@@ -638,12 +640,12 @@ impl TitleMetadataContentEntry {
 }
 
 #[derive(Debug)]
-pub struct TitleMetadataV1ExtraData {
+pub struct TitleMetadataV1 {
     content_entries_groups_hash_sha256: [u8; 32],
     content_entries_groups: [TitleMetadataV1ContentEntriesGroup; 64],
 }
 
-impl TitleMetadataV1ExtraData {
+impl TitleMetadataV1 {
     fn new<T: Read + Seek>(mut stream: T) -> Result<Self, TitleMetadataError> {
         let content_entries_groups_hash_sha256 = util::read_exact!(stream, 32)?;
         let mut content_entries_groups = [TitleMetadataV1ContentEntriesGroup::new_dummy(); 64];
@@ -652,7 +654,7 @@ impl TitleMetadataV1ExtraData {
             content_entries_groups[i] = TitleMetadataV1ContentEntriesGroup::new(&mut stream)?;
         }
 
-        Ok(TitleMetadataV1ExtraData {
+        Ok(TitleMetadataV1 {
             content_entries_groups_hash_sha256,
             content_entries_groups,
         })

@@ -31,6 +31,7 @@ pub struct InstallableWad {
     pub footer_size: u32,
 }
 
+#[derive(Debug)]
 struct ContentsStore {
     contents: Vec<Vec<u8>>,
     first_content_physical_position: usize,
@@ -99,14 +100,13 @@ impl InstallableWad {
         mut stream: T,
         title_metadata: &TitleMetadata,
         first_content_physical_position: usize,
-    ) -> Result<ContentsStore, InstallableWadError> {
+    ) -> Result<Option<ContentsStore>, InstallableWadError> {
         let mut all_contents_bytes = vec![];
 
-        if title_metadata.content_chunk_entries.len() == 0 {
-            return Ok(ContentsStore {
-                contents: all_contents_bytes,
-                first_content_physical_position,
-            });
+        let number_of_entries = title_metadata.content_chunk_entries.len();
+
+        if number_of_entries == 0 || first_content_physical_position >= number_of_entries {
+            return Ok(None);
         }
 
         for i in first_content_physical_position..title_metadata.content_chunk_entries.len() {
@@ -121,29 +121,35 @@ impl InstallableWad {
             all_contents_bytes.push(content_bytes);
         }
 
-        Ok(ContentsStore {
+        Ok(Some(ContentsStore {
             contents: all_contents_bytes,
             first_content_physical_position,
-        })
+        }))
     }
 
     fn restore_contents<T: Write + Read + Seek>(
         &mut self,
         stream: &mut StreamPin<T>,
         title_metadata: &TitleMetadata,
-        contents_store: &ContentsStore,
+        contents_store: &Option<ContentsStore>,
     ) -> Result<(), InstallableWadError> {
-        self.seek_content(
-            &mut *stream,
-            title_metadata,
-            title_metadata
-                .select_with_physical_position(contents_store.first_content_physical_position),
-        )?;
+        match contents_store {
+            Some(contents_store) => {
+                self.seek_content(
+                    &mut *stream,
+                    title_metadata,
+                    title_metadata.select_with_physical_position(
+                        contents_store.first_content_physical_position,
+                    ),
+                )?;
 
-        for bytes in &contents_store.contents {
-            stream.write_all(&bytes)?;
-            stream.align_zeroed(Self::SECTION_BOUNDARY)?;
-        }
+                for bytes in &contents_store.contents {
+                    stream.write_all(&bytes)?;
+                    stream.align_zeroed(Self::SECTION_BOUNDARY)?;
+                }
+            }
+            None => {}
+        };
 
         Ok(())
     }
@@ -172,6 +178,9 @@ pub enum InstallableWadError {
 
     #[error("Missing a to modify this content: {0}")]
     ModifyContentMissingSetting(&'static str),
+
+    #[error("Title metadata entry not found")]
+    TitleMetadataEntryNotFoundError,
 }
 
 #[derive(Debug)]

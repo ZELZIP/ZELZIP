@@ -16,21 +16,17 @@ use crate::ticket::PreSwitchTicketError;
 // "When I wrote this code, only god and I know how it worked.
 // Now, only god knows it" - Kutu 2025-06-19 21:12:52Z
 
-// TODO: Remove "ExtraData" on type names
-
 #[derive(Debug)]
-pub struct PreSwitchTicketV1ExtraData {
-    pub sections: Vec<PreSwitchTicketV1ExtraDataSection>,
+pub struct PreSwitchTicketV1 {
+    pub sections: Vec<PreSwitchTicketV1Section>,
     pub flags: u32,
 }
 
-impl PreSwitchTicketV1ExtraData {
+impl PreSwitchTicketV1 {
     const HEADER_SIZE: u16 = 20;
     const SECTION_HEADER_SIZE: u16 = 20;
 
-    pub fn new<T: Read + Seek>(
-        mut stream: T,
-    ) -> Result<PreSwitchTicketV1ExtraData, PreSwitchTicketV1Error> {
+    pub fn new<T: Read + Seek>(mut stream: T) -> Result<PreSwitchTicketV1, PreSwitchTicketV1Error> {
         let mut stream = StreamPin::new(stream)?;
 
         let version = stream.read_u16::<BE>()?;
@@ -45,8 +41,7 @@ impl PreSwitchTicketV1ExtraData {
             ));
         }
 
-        // TODO: Verify with this
-        let _v1_data_size = stream.read_u32::<BE>()?;
+        let v1_data_size = stream.read_u32::<BE>()?;
 
         let first_section_header_offset = stream.read_u32::<BE>()?;
         let number_of_sections = stream.read_u16::<BE>()?;
@@ -65,10 +60,18 @@ impl PreSwitchTicketV1ExtraData {
         stream.seek_from_pin(first_section_header_offset.into())?;
 
         for _ in 0..number_of_sections {
-            sections.push(PreSwitchTicketV1ExtraDataSection::new(&mut stream)?);
+            sections.push(PreSwitchTicketV1Section::new(&mut stream)?);
         }
 
-        Ok(PreSwitchTicketV1ExtraData { sections, flags })
+        let v1 = PreSwitchTicketV1 { sections, flags };
+
+        if v1_data_size != v1.size() {
+            return Err(PreSwitchTicketV1Error::UnknownTicketV1TotalSize(
+                v1_data_size,
+            ));
+        }
+
+        Ok(v1)
     }
 
     pub(crate) fn dump<T: Write + Seek>(&self, mut stream: T) -> io::Result<()> {
@@ -98,10 +101,10 @@ impl PreSwitchTicketV1ExtraData {
             if i == 0 {
                 let first_section_byte_position = stream.relative_position()? as u64;
 
-                stream.seek_from_pin(first_section_byte_header_position)?;
+                stream.seek_from_pin(first_section_byte_header_position as i64)?;
                 stream.write_u32::<BE>(first_section_byte_position as u32)?;
 
-                stream.seek_from_pin(first_section_byte_position)?;
+                stream.seek_from_pin(first_section_byte_position as i64)?;
             }
 
             stream.write_u32::<BE>(start_of_records[i])?;
@@ -111,11 +114,11 @@ impl PreSwitchTicketV1ExtraData {
             stream.write_u32::<BE>(Self::SECTION_HEADER_SIZE.into())?;
 
             stream.write_u16::<BE>(match section.records {
-                PreSwitchTicketV1ExtraDataRecords::Permanent(_) => 1,
-                PreSwitchTicketV1ExtraDataRecords::Subscription(_) => 2,
-                PreSwitchTicketV1ExtraDataRecords::Content(_) => 3,
-                PreSwitchTicketV1ExtraDataRecords::ContentConsumption(_) => 4,
-                PreSwitchTicketV1ExtraDataRecords::AccessTitle(_) => 5,
+                PreSwitchTicketV1Records::Permanent(_) => 1,
+                PreSwitchTicketV1Records::Subscription(_) => 2,
+                PreSwitchTicketV1Records::Content(_) => 3,
+                PreSwitchTicketV1Records::ContentConsumption(_) => 4,
+                PreSwitchTicketV1Records::AccessTitle(_) => 5,
             })?;
 
             stream.write_u16::<BE>(section.flags)?;
@@ -150,26 +153,32 @@ pub enum PreSwitchTicketV1Error {
     #[error("Unknown ticket v1 section type: {0}")]
     UnknownTicketV1SectionKind(u16),
 
+    #[error("Unknown ticket v1 total size: {0}")]
+    UnknownTicketV1TotalSize(u32),
+
+    #[error("Unknown ticket record size: {0}")]
+    UnknownTicketV1RecordSize(u32),
+
     #[error("IO error: {0}")]
     IoError(#[from] io::Error),
 }
 
 #[derive(Debug)]
-pub struct PreSwitchTicketV1ExtraDataSection {
-    pub records: PreSwitchTicketV1ExtraDataRecords,
+pub struct PreSwitchTicketV1Section {
+    pub records: PreSwitchTicketV1Records,
     pub flags: u16,
 }
 
 #[derive(Debug)]
-pub enum PreSwitchTicketV1ExtraDataRecords {
-    Permanent(Vec<PreSwitchTicketV1ExtraDataRecordPermanent>),
-    Subscription(Vec<PreSwitchTicketV1ExtraDataRecordSubscription>),
-    Content(Vec<PreSwitchTicketV1ExtraDataRecordContent>),
-    ContentConsumption(Vec<PreSwitchTicketV1ExtraDataRecordContentConsumption>),
-    AccessTitle(Vec<PreSwitchTicketV1ExtraDataRecordAccessTitle>),
+pub enum PreSwitchTicketV1Records {
+    Permanent(Vec<PreSwitchTicketV1RecordPermanent>),
+    Subscription(Vec<PreSwitchTicketV1RecordSubscription>),
+    Content(Vec<PreSwitchTicketV1RecordContent>),
+    ContentConsumption(Vec<PreSwitchTicketV1RecordContentConsumption>),
+    AccessTitle(Vec<PreSwitchTicketV1RecordAccessTitle>),
 }
 
-impl PreSwitchTicketV1ExtraDataRecords {
+impl PreSwitchTicketV1Records {
     fn size(&self) -> u32 {
         self.size_of_one_record() * self.len()
     }
@@ -196,27 +205,27 @@ impl PreSwitchTicketV1ExtraDataRecords {
 
     pub(crate) fn dump<T: Write>(&self, mut stream: T) -> io::Result<()> {
         match self {
-            PreSwitchTicketV1ExtraDataRecords::Permanent(data) => {
+            PreSwitchTicketV1Records::Permanent(data) => {
                 for record in data {
                     record.reference_id.dump(&mut stream)?;
                 }
             }
 
-            PreSwitchTicketV1ExtraDataRecords::Subscription(data) => {
+            PreSwitchTicketV1Records::Subscription(data) => {
                 for record in data {
                     stream.write_u32::<BE>(record.expiration_time)?;
                     record.reference_id.dump(&mut stream)?;
                 }
             }
 
-            PreSwitchTicketV1ExtraDataRecords::Content(data) => {
+            PreSwitchTicketV1Records::Content(data) => {
                 for record in data {
                     stream.write_u32::<BE>(record.offset_content_index)?;
                     stream.write_all(&record.access_mask)?;
                 }
             }
 
-            PreSwitchTicketV1ExtraDataRecords::ContentConsumption(data) => {
+            PreSwitchTicketV1Records::ContentConsumption(data) => {
                 for record in data {
                     stream.write_u16::<BE>(record.content_index)?;
                     stream.write_u16::<BE>(record.limit_code)?;
@@ -224,7 +233,7 @@ impl PreSwitchTicketV1ExtraDataRecords {
                 }
             }
 
-            PreSwitchTicketV1ExtraDataRecords::AccessTitle(data) => {
+            PreSwitchTicketV1Records::AccessTitle(data) => {
                 for record in data {
                     record.title_id.dump(&mut stream)?;
                     stream.write_u64::<BE>(record.title_mask)?;
@@ -236,27 +245,28 @@ impl PreSwitchTicketV1ExtraDataRecords {
     }
 }
 
-impl PreSwitchTicketV1ExtraDataSection {
+impl PreSwitchTicketV1Section {
     fn new<T: Read + Seek>(
         mut stream: &mut StreamPin<T>,
-    ) -> Result<PreSwitchTicketV1ExtraDataSection, PreSwitchTicketV1Error> {
+    ) -> Result<PreSwitchTicketV1Section, PreSwitchTicketV1Error> {
         let section_records_offset = stream.read_u32::<BE>()?;
         let number_of_records = stream.read_u32::<BE>()?;
-        // TODO: Verify this?
-        let size_of_a_record = stream.read_u32::<BE>()?;
-        // TODO: Verify this
-        let section_header_size = stream.read_u32::<BE>()?;
+
+        // NOTE: Not worth checking
+        let _size_of_a_record = stream.read_u32::<BE>()?;
+        let _section_total_size = stream.read_u32::<BE>()?;
+
         let section_kind = stream.read_u16::<BE>()?;
         let flags = stream.read_u16::<BE>()?;
 
         let next_section_position = stream.stream_position()?;
 
         let mut records = match section_kind {
-            1 => PreSwitchTicketV1ExtraDataRecords::Permanent(vec![]),
-            2 => PreSwitchTicketV1ExtraDataRecords::Subscription(vec![]),
-            3 => PreSwitchTicketV1ExtraDataRecords::Content(vec![]),
-            4 => PreSwitchTicketV1ExtraDataRecords::ContentConsumption(vec![]),
-            5 => PreSwitchTicketV1ExtraDataRecords::AccessTitle(vec![]),
+            1 => PreSwitchTicketV1Records::Permanent(vec![]),
+            2 => PreSwitchTicketV1Records::Subscription(vec![]),
+            3 => PreSwitchTicketV1Records::Content(vec![]),
+            4 => PreSwitchTicketV1Records::ContentConsumption(vec![]),
+            5 => PreSwitchTicketV1Records::AccessTitle(vec![]),
 
             kind => return Err(PreSwitchTicketV1Error::UnknownTicketV1SectionKind(kind)),
         };
@@ -265,49 +275,49 @@ impl PreSwitchTicketV1ExtraDataSection {
 
         for _ in 0..number_of_records {
             match records {
-                PreSwitchTicketV1ExtraDataRecords::Permanent(ref mut data) => {
-                    let reference_id = PreSwitchTicketV1ExtraDataRefereceId::new(&mut *stream)?;
+                PreSwitchTicketV1Records::Permanent(ref mut data) => {
+                    let reference_id = PreSwitchTicketV1RefereceId::new(&mut *stream)?;
 
-                    data.push(PreSwitchTicketV1ExtraDataRecordPermanent { reference_id });
+                    data.push(PreSwitchTicketV1RecordPermanent { reference_id });
                 }
 
-                PreSwitchTicketV1ExtraDataRecords::Subscription(ref mut data) => {
+                PreSwitchTicketV1Records::Subscription(ref mut data) => {
                     let expiration_time = stream.read_u32::<BE>()?;
-                    let reference_id = PreSwitchTicketV1ExtraDataRefereceId::new(&mut *stream)?;
+                    let reference_id = PreSwitchTicketV1RefereceId::new(&mut *stream)?;
 
-                    data.push(PreSwitchTicketV1ExtraDataRecordSubscription {
+                    data.push(PreSwitchTicketV1RecordSubscription {
                         expiration_time,
                         reference_id,
                     })
                 }
 
-                PreSwitchTicketV1ExtraDataRecords::Content(ref mut data) => {
+                PreSwitchTicketV1Records::Content(ref mut data) => {
                     let offset_content_index = stream.read_u32::<BE>()?;
                     let access_mask = util::read_exact!(stream, 128)?;
 
-                    data.push(PreSwitchTicketV1ExtraDataRecordContent {
+                    data.push(PreSwitchTicketV1RecordContent {
                         offset_content_index,
                         access_mask,
                     })
                 }
 
-                PreSwitchTicketV1ExtraDataRecords::ContentConsumption(ref mut data) => {
+                PreSwitchTicketV1Records::ContentConsumption(ref mut data) => {
                     let content_index = stream.read_u16::<BE>()?;
                     let limit_code = stream.read_u16::<BE>()?;
                     let limit_value = stream.read_u32::<BE>()?;
 
-                    data.push(PreSwitchTicketV1ExtraDataRecordContentConsumption {
+                    data.push(PreSwitchTicketV1RecordContentConsumption {
                         content_index,
                         limit_code,
                         limit_value,
                     })
                 }
 
-                PreSwitchTicketV1ExtraDataRecords::AccessTitle(ref mut data) => {
+                PreSwitchTicketV1Records::AccessTitle(ref mut data) => {
                     let title_id = TitleId::new(stream.read_u64::<BE>()?);
                     let title_mask = stream.read_u64::<BE>()?;
 
-                    data.push(PreSwitchTicketV1ExtraDataRecordAccessTitle {
+                    data.push(PreSwitchTicketV1RecordAccessTitle {
                         title_id,
                         title_mask,
                     })
@@ -316,25 +326,23 @@ impl PreSwitchTicketV1ExtraDataSection {
         }
 
         stream.seek(SeekFrom::Start(next_section_position))?;
-        Ok(PreSwitchTicketV1ExtraDataSection { records, flags })
+        Ok(PreSwitchTicketV1Section { records, flags })
     }
 }
 
 #[derive(Debug)]
 // TODO(DISCOVER)
-pub struct PreSwitchTicketV1ExtraDataRefereceId {
+pub struct PreSwitchTicketV1RefereceId {
     pub id: [u8; 16],
     pub attributes: u32,
 }
 
-impl PreSwitchTicketV1ExtraDataRefereceId {
-    fn new<T: Read>(
-        mut stream: T,
-    ) -> Result<PreSwitchTicketV1ExtraDataRefereceId, PreSwitchTicketV1Error> {
+impl PreSwitchTicketV1RefereceId {
+    fn new<T: Read>(mut stream: T) -> Result<PreSwitchTicketV1RefereceId, PreSwitchTicketV1Error> {
         let id = util::read_exact!(stream, 16)?;
         let attributes = stream.read_u32::<BE>()?;
 
-        Ok(PreSwitchTicketV1ExtraDataRefereceId { id, attributes })
+        Ok(PreSwitchTicketV1RefereceId { id, attributes })
     }
 
     fn dump<T: Write>(&self, mut stream: T) -> io::Result<()> {
@@ -347,20 +355,20 @@ impl PreSwitchTicketV1ExtraDataRefereceId {
 
 #[derive(Debug)]
 // TODO(DISCOVER)
-pub struct PreSwitchTicketV1ExtraDataRecordPermanent {
-    pub reference_id: PreSwitchTicketV1ExtraDataRefereceId,
+pub struct PreSwitchTicketV1RecordPermanent {
+    pub reference_id: PreSwitchTicketV1RefereceId,
 }
 
 #[derive(Debug)]
 // TODO(DISCOVER)
-pub struct PreSwitchTicketV1ExtraDataRecordSubscription {
+pub struct PreSwitchTicketV1RecordSubscription {
     pub expiration_time: u32,
-    pub reference_id: PreSwitchTicketV1ExtraDataRefereceId,
+    pub reference_id: PreSwitchTicketV1RefereceId,
 }
 
 #[derive(Debug)]
 // TODO(DISCOVER)
-pub struct PreSwitchTicketV1ExtraDataRecordContent {
+pub struct PreSwitchTicketV1RecordContent {
     // TODO(DISCOVER)
     pub offset_content_index: u32,
 
@@ -370,7 +378,7 @@ pub struct PreSwitchTicketV1ExtraDataRecordContent {
 
 #[derive(Debug)]
 // TODO(DISCOVER)
-pub struct PreSwitchTicketV1ExtraDataRecordContentConsumption {
+pub struct PreSwitchTicketV1RecordContentConsumption {
     // TODO(DISCOVER)
     pub content_index: u16,
 
@@ -383,7 +391,7 @@ pub struct PreSwitchTicketV1ExtraDataRecordContentConsumption {
 
 #[derive(Debug)]
 // TODO(DISCOVER)
-pub struct PreSwitchTicketV1ExtraDataRecordAccessTitle {
+pub struct PreSwitchTicketV1RecordAccessTitle {
     pub title_id: TitleId,
     pub title_mask: u64,
 }

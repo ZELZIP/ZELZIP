@@ -52,22 +52,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_align_to_boundary_unaligned_value() {
+    fn align_to_boundary_unaligned_value() {
         assert_eq!(align_to_boundary(117, 64), 128);
     }
 
     #[test]
-    fn test_align_to_boundary_aligned_value() {
+    fn align_to_boundary_aligned_value() {
         assert_eq!(align_to_boundary(100, 50), 100);
     }
 
     #[test]
-    fn test_align_to_boundary_same_value() {
+    fn align_to_boundary_same_value() {
         assert_eq!(align_to_boundary(73, 73), 73);
     }
 
     #[test]
-    fn test_align_to_boundary_zero() {
+    fn align_to_boundary_zero() {
         assert_eq!(align_to_boundary(0, 0), 0);
     }
 }

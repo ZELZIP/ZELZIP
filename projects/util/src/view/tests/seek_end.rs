@@ -4,7 +4,7 @@ use std::io::Cursor;
 use std::io::Read;
 
 #[test]
-fn test_view_seek_end() {
+fn seek_end() {
     let buffer = Cursor::new(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
     let mut view = View::new(buffer, 5).unwrap();
@@ -16,7 +16,7 @@ fn test_view_seek_end() {
 }
 
 #[test]
-fn test_view_seek_end_out_of_bounds() {
+fn seek_end_out_of_bounds() {
     let buffer = Cursor::new(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
     let mut view = View::new(buffer, 3).unwrap();
@@ -30,7 +30,7 @@ fn test_view_seek_end_out_of_bounds() {
 }
 
 #[test]
-fn test_view_seek_end_negative_offset_outside_buffer() {
+fn seek_end_negative_offset_outside_buffer() {
     let buffer = Cursor::new(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
     let mut view = View::new(buffer, 3).unwrap();
@@ -38,7 +38,7 @@ fn test_view_seek_end_negative_offset_outside_buffer() {
 }
 
 #[test]
-fn test_view_seek_end_negative_offset_outside_view() {
+fn seek_end_negative_offset_outside_view() {
     let mut buffer = Cursor::new(vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     buffer.seek_relative(2).unwrap();
 

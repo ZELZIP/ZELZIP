@@ -26,7 +26,7 @@ mod tests {
     const DUMMY_TEXT_STR: &str = "Hi!";
 
     #[test]
-    fn test_string_from_null_terminated_bytes_no_null_char() {
+    fn string_from_null_terminated_bytes_no_null_char() {
         assert_eq!(
             String::from_null_terminated_bytes(&DUMMY_TEXT_ASCII).unwrap(),
             DUMMY_TEXT_STR
@@ -34,7 +34,7 @@ mod tests {
     }
 
     #[test]
-    fn test_string_from_null_terminated_bytes_with_null_chars() {
+    fn string_from_null_terminated_bytes_with_null_chars() {
         let mut buffer = Vec::from(DUMMY_TEXT_ASCII);
         buffer.append(&mut vec![0, 0, 0]);
 
