@@ -2,4 +2,4 @@
 
 ## Reporting a Vulnerability
 
-Report every discovered vulnerability on the [GitHub's private secutity advisor system](https://github.com/kutu-dev/gotre/security/advisories/new).
+Report every discovered vulnerability on the [GitHub's private security advisor system](https://github.com/kutu-dev/gotre/security/advisories/new).
