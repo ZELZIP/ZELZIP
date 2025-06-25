@@ -6,6 +6,9 @@
 
 name: "Publish updates of all Rust crates"
 
+permissions:
+  contents: read
+
 # If a new commit is pushed just ignore the current one in the process queue and skip to the newest one
 concurrency:
   group: ${{ github.workflow }}
