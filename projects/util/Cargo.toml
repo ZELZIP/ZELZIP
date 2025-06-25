@@ -1,7 +1,9 @@
 [package]
 name = "zelzip_util"
+description = "TODO"
 version = "1.0.0"
 publish = true
+license = "MPL-2.0"
 edition.workspace = true
 
 [features]
