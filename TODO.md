@@ -1,10 +1,5 @@
 # TODO (Global)
 
-- Update gitignore
-  - Buildable gitignore?
-  - Copy to .prettierignore
-- Change GOTRE to ZEL.ZIP
-- Prefix crates
 - CI/CD
 - Global README.md
   - Note about this not being the document for the docs.
@@ -16,6 +11,7 @@
 - TODO comments analyzer tool
 
 ## Future projects
+
 - Age limit breaker
 - ReNUS
 - Seto Database

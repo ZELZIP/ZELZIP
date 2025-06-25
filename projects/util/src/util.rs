@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 
-//! Miscellaneous code shared for all the crates inside the GOTRE project.
+//! Miscellaneous code shared for all the crates inside the ZEL.ZIP project.
 //!
 //! Has partial support for `no_std` mode by disabling the default `std` feature flag. Extra suport
 //! for "alloc-compatible" `no_std` environments is available by enabling the `alloc` feature flag.

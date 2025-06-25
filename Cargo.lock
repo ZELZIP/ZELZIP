@@ -108,20 +108,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gotre_util"
-version = "1.0.0"
-dependencies = [
- "aes",
- "byteorder",
- "cbc",
- "cfg-if",
- "crypto-common",
- "hex-literal",
- "sha1",
- "sha2",
-]
-
-[[package]]
 name = "hex-literal"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -142,22 +128,6 @@ name = "libc"
 version = "0.2.172"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d750af042f7ef4f724306de029d18836c26c1765a54a6a3f094cbd23a7267ffa"
-
-[[package]]
-name = "niiebla"
-version = "1.0.0"
-dependencies = [
- "aes",
- "bitflags",
- "block-padding",
- "byteorder",
- "cbc",
- "cfg-if",
- "gotre_util",
- "sha1",
- "sha2",
- "thiserror",
-]
 
 [[package]]
 name = "proc-macro2"
@@ -252,5 +222,35 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 name = "viiento"
 version = "0.1.0"
 dependencies = [
- "niiebla",
+ "zelzip_niiebla",
+]
+
+[[package]]
+name = "zelzip_niiebla"
+version = "1.0.0"
+dependencies = [
+ "aes",
+ "bitflags",
+ "block-padding",
+ "byteorder",
+ "cbc",
+ "cfg-if",
+ "sha1",
+ "sha2",
+ "thiserror",
+ "zelzip_util",
+]
+
+[[package]]
+name = "zelzip_util"
+version = "1.0.0"
+dependencies = [
+ "aes",
+ "byteorder",
+ "cbc",
+ "cfg-if",
+ "crypto-common",
+ "hex-literal",
+ "sha1",
+ "sha2",
 ]

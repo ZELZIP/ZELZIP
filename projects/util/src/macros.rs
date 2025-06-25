@@ -12,7 +12,7 @@
 /// use std::io::Cursor;
 /// let mut stream = Cursor::new([0, 1, 2, 3]);
 ///
-/// let buf = gotre_util::read_exact!(stream, 2).unwrap();
+/// let buf = zelzip_util::read_exact!(stream, 2).unwrap();
 ///
 /// assert_eq!(buf, [0, 1]);
 /// ```
@@ -44,7 +44,7 @@ macro_rules! read_exact {
 /// use std::io::Cursor;
 /// let mut stream = Cursor::new([72, 105, 33]);
 ///
-/// let string = gotre_util::read_string!(stream, 3).unwrap();
+/// let string = zelzip_util::read_string!(stream, 3).unwrap();
 ///
 /// assert_eq!(string, "Hi!");
 /// ```

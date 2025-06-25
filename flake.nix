@@ -4,8 +4,6 @@
 #
 # SPDX-License-Identifier: MPL-2.0
 {
-  description = "GOTRE's monorepo for packages and services";
-
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
 

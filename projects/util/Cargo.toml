@@ -1,5 +1,5 @@
 [package]
-name = "gotre_util"
+name = "zelzip_util"
 version = "1.0.0"
 publish.workspace = true
 edition.workspace = true

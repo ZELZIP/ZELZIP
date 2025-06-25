@@ -1,5 +1,5 @@
 [package]
-name = "niiebla"
+name = "zelzip_niiebla"
 version = "1.0.0"
 edition.workspace = true
 publish.workspace = true
