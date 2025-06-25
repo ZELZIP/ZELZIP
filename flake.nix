@@ -21,7 +21,6 @@
 
       perSystem = {
         pkgs,
-        inputs',
         system,
         ...
       }: {
@@ -58,21 +57,31 @@
             cargo-all-features
 
             ## YAML, TS, JS, HTML, CSS, JSON, Markdown
-	    pnpm
-	    nodejs
+            pnpm
+            nodejs
             nodePackages.prettier
 
+            ## Python
+            ruff
+
             # Apps
-            ## Wii emulator
-            #dolphin-emu
-
-            ## Logging and prompts for shell scripts
-            gum
-
             ## Grepping inside multiple files
             ripgrep
 
-            inputs'.toolkit.packages.default
+            ## The toolkit of the project
+            (with pkgs.python3Packages;
+              buildPythonPackage {
+                pname = "zelzip-toolchain";
+                version = "0.0.0";
+
+                src = ./projects/toolkit;
+
+                buildInputs = [setuptools];
+
+                propagatedBuildInputs = [typer plumbum];
+
+                pyproject = true;
+              })
           ];
         };
       };

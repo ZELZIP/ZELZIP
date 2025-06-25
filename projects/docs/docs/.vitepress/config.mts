@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitepress'
+import { defineConfig } from "vitepress";
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -7,36 +7,36 @@ export default defineConfig({
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
-      { text: 'Home', link: '/' },
-      { text: 'Visit the main page', link: 'https://zel.zip' },
+      { text: "Home", link: "/" },
+      { text: "Visit the main page", link: "https://zel.zip" },
     ],
 
     sidebar: {
-	"/": [
-      		{
-        		text: 'Projects',
-        		items: [
-          			{ text: 'NiiEBLA library', link: '/niiebla/niiebla' },
-          			{ text: 'ReNUS library', link: '/renus' },
-          			{ text: 'ViiENTO CLI', link: '/viiento' },
-        		]
-      		}
-	],
+      "/": [
+        {
+          text: "Projects",
+          items: [
+            { text: "NiiEBLA library", link: "/niiebla/niiebla" },
+            { text: "ReNUS library", link: "/renus" },
+            { text: "ViiENTO CLI", link: "/viiento" },
+          ],
+        },
+      ],
 
       "/niiebla/": [
-      		{
-        		text: 'The NiiEBLA library',
-        		items: [
-          			{ text: 'Getting Started', link: '/niiebla/niiebla' },
-          			{ text: 'WAD/TAD files', link: '/niiebla/wad' },
-          			{ text: 'Title IDs', link: '/niiebla/title_ids' },
-        		]
-      		},
-      	]
+        {
+          text: "The NiiEBLA library",
+          items: [
+            { text: "Getting Started", link: "/niiebla/niiebla" },
+            { text: "WAD/TAD files", link: "/niiebla/wad" },
+            { text: "Title IDs", link: "/niiebla/title_ids" },
+          ],
+        },
+      ],
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/vuejs/vitepress' }
-    ]
-  }
-})
+      { icon: "github", link: "https://github.com/vuejs/vitepress" },
+    ],
+  },
+});

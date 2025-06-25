@@ -1,15 +1,19 @@
 # WAD/TAD files
 
- WAD files are one of the many ways titles can be distributed, they consist of an ownership ticket, the metadata of the title, a certificate chain and a set of binary blobs called "contents".
+WAD files are one of the many ways titles can be distributed, they consist of an ownership ticket, the metadata of the title, a certificate chain and a set of binary blobs called "contents".
 
- Be aware that the usual `dump(...)` method **will only dump the header of the WAD** not all the content inside of it, to dump the data inside it you should use one of the following functions: `write_*_raw(...)`, `write_*_safe(...)` or `write_*_safe_file(...)` where `*` can be either `ticket`, `title_metadata` or `certificate_chain`, the suffix on the methods meain the following:
+Be aware that the usual `dump(...)` method **will only dump the header of the WAD** not all the content inside of it, to dump the data inside it you should use one of the following functions: `write_*_raw(...)`, `write_*_safe(...)` or `write_*_safe_file(...)` where `*` can be either `ticket`, `title_metadata` or `certificate_chain`, the suffix on the methods meain the following:
+
 - `_raw`: The data will be writen without any safety check, usually data after it will be corrupted.
 - `_safe`: The data after the new one will be stored on the heap and put after it safely.
-` _safe_file`: In addition to the actions made by `_safe`, given that the parameters of the function only allows [`File`](https://doc.rust-lang.org/std/fs/struct.File.html)s the file will be trimmed to avoid useless or meaningless data at the end.
+  ` _safe_file`: In addition to the actions made by `_safe`, given that the parameters of the function only allows [`File`](https://doc.rust-lang.org/std/fs/struct.File.html)s the file will be trimmed to avoid useless or meaningless data at the end.
 
 ## Content manipulation
+
 ### Reading
+
 Contents inside a WAD are encrypted with a method unique of the platform where the title is expected to run, both the encrypted and a in-place decrypted stream (a "subview" of the stream of the WAD) of the data can be get:
+
 ```rust
 use zelzip_niiebla::{Wad, CryptographicMethod};
 
@@ -35,7 +39,9 @@ let decrypted_view = wad.decrypted_view(
 ```
 
 ### Writting
+
 To avoid store contents in-memory (as they can have an arbitrary size) the following builder can be used:
+
 ```rust
 // Modify the data stored inside a content
 wad.modify_content(&mut wad_stream)

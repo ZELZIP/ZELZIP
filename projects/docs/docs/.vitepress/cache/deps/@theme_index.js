@@ -1,12 +1,5 @@
-import {
-  useMediaQuery
-} from "./chunk-45PRYOM6.js";
-import {
-  computed,
-  ref,
-  shallowRef,
-  watch
-} from "./chunk-RJY4QFKG.js";
+import { useMediaQuery } from "./chunk-45PRYOM6.js";
+import { computed, ref, shallowRef, watch } from "./chunk-RJY4QFKG.js";
 
 // node_modules/.pnpm/vitepress@1.6.3_@algolia+client-search@5.29.0_postcss@8.5.6_search-insights@2.17.3/node_modules/vitepress/dist/client/theme-default/index.js
 import "/home/kutu/Documents/Dev/gotre/projects/docs/node_modules/.pnpm/vitepress@1.6.3_@algolia+client-search@5.29.0_postcss@8.5.6_search-insights@2.17.3/node_modules/vitepress/dist/client/theme-default/styles/fonts.css";
@@ -62,18 +55,20 @@ function ensureStartingSlash(path) {
 
 // node_modules/.pnpm/vitepress@1.6.3_@algolia+client-search@5.29.0_postcss@8.5.6_search-insights@2.17.3/node_modules/vitepress/dist/client/theme-default/support/sidebar.js
 function getSidebar(_sidebar, path) {
-  if (Array.isArray(_sidebar))
-    return addBase(_sidebar);
-  if (_sidebar == null)
-    return [];
+  if (Array.isArray(_sidebar)) return addBase(_sidebar);
+  if (_sidebar == null) return [];
   path = ensureStartingSlash(path);
-  const dir = Object.keys(_sidebar).sort((a, b) => {
-    return b.split("/").length - a.split("/").length;
-  }).find((dir2) => {
-    return path.startsWith(ensureStartingSlash(dir2));
-  });
+  const dir = Object.keys(_sidebar)
+    .sort((a, b) => {
+      return b.split("/").length - a.split("/").length;
+    })
+    .find((dir2) => {
+      return path.startsWith(ensureStartingSlash(dir2));
+    });
   const sidebar = dir ? _sidebar[dir] : [];
-  return Array.isArray(sidebar) ? addBase(sidebar) : addBase(sidebar.items, sidebar.base);
+  return Array.isArray(sidebar)
+    ? addBase(sidebar)
+    : addBase(sidebar.items, sidebar.base);
 }
 function getSidebarGroups(sidebar) {
   const groups = [];
@@ -95,10 +90,8 @@ function addBase(items, _base) {
   return [...items].map((_item) => {
     const item = { ..._item };
     const base = item.base || _base;
-    if (base && item.link)
-      item.link = base + item.link;
-    if (item.items)
-      item.items = addBase(item.items, base);
+    if (base && item.link) item.link = base + item.link;
+    if (item.items) item.items = addBase(item.items, base);
     return item;
   });
 }
@@ -119,18 +112,22 @@ function useSidebar() {
       sidebar.value = _sidebar.value;
   });
   const hasSidebar = computed(() => {
-    return frontmatter.value.sidebar !== false && sidebar.value.length > 0 && frontmatter.value.layout !== "home";
+    return (
+      frontmatter.value.sidebar !== false &&
+      sidebar.value.length > 0 &&
+      frontmatter.value.layout !== "home"
+    );
   });
   const leftAside = computed(() => {
     if (hasAside)
-      return frontmatter.value.aside == null ? theme2.value.aside === "left" : frontmatter.value.aside === "left";
+      return frontmatter.value.aside == null
+        ? theme2.value.aside === "left"
+        : frontmatter.value.aside === "left";
     return false;
   });
   const hasAside = computed(() => {
-    if (frontmatter.value.layout === "home")
-      return false;
-    if (frontmatter.value.aside != null)
-      return !!frontmatter.value.aside;
+    if (frontmatter.value.layout === "home") return false;
+    if (frontmatter.value.aside != null) return !!frontmatter.value.aside;
     return theme2.value.aside !== false;
   });
   const isSidebarEnabled = computed(() => hasSidebar.value && is960.value);
@@ -156,7 +153,7 @@ function useSidebar() {
     isSidebarEnabled,
     open,
     close,
-    toggle
+    toggle,
   };
 }
 
@@ -165,24 +162,25 @@ var ignoreRE = /\b(?:VPBadge|header-anchor|footnote-ref|ignore-header)\b/;
 var resolvedHeaders = [];
 function getHeaders(range) {
   const headers = [
-    ...document.querySelectorAll(".VPDoc :where(h1,h2,h3,h4,h5,h6)")
-  ].filter((el) => el.id && el.hasChildNodes()).map((el) => {
-    const level = Number(el.tagName[1]);
-    return {
-      element: el,
-      title: serializeHeader(el),
-      link: "#" + el.id,
-      level
-    };
-  });
+    ...document.querySelectorAll(".VPDoc :where(h1,h2,h3,h4,h5,h6)"),
+  ]
+    .filter((el) => el.id && el.hasChildNodes())
+    .map((el) => {
+      const level = Number(el.tagName[1]);
+      return {
+        element: el,
+        title: serializeHeader(el),
+        link: "#" + el.id,
+        level,
+      };
+    });
   return resolveHeaders(headers, range);
 }
 function serializeHeader(h) {
   let ret = "";
   for (const node of h.childNodes) {
     if (node.nodeType === 1) {
-      if (ignoreRE.test(node.className))
-        continue;
+      if (ignoreRE.test(node.className)) continue;
       ret += node.textContent;
     } else if (node.nodeType === 3) {
       ret += node.textContent;
@@ -194,8 +192,16 @@ function resolveHeaders(headers, range) {
   if (range === false) {
     return [];
   }
-  const levelsRange = (typeof range === "object" && !Array.isArray(range) ? range.level : range) || 2;
-  const [high, low] = typeof levelsRange === "number" ? [levelsRange, levelsRange] : levelsRange === "deep" ? [2, 6] : levelsRange;
+  const levelsRange =
+    (typeof range === "object" && !Array.isArray(range)
+      ? range.level
+      : range) || 2;
+  const [high, low] =
+    typeof levelsRange === "number"
+      ? [levelsRange, levelsRange]
+      : levelsRange === "deep"
+        ? [2, 6]
+        : levelsRange;
   return buildTree(headers, high, low);
 }
 function buildTree(data, min, max) {
@@ -209,17 +215,17 @@ function buildTree(data, min, max) {
       stack.pop();
       parent = stack[stack.length - 1];
     }
-    if (node.element.classList.contains("ignore-header") || parent && "shouldIgnore" in parent) {
+    if (
+      node.element.classList.contains("ignore-header") ||
+      (parent && "shouldIgnore" in parent)
+    ) {
       stack.push({ level: node.level, shouldIgnore: true });
       return;
     }
-    if (node.level > max || node.level < min)
-      return;
+    if (node.level > max || node.level < min) return;
     resolvedHeaders.push({ element: node.element, link: node.link });
-    if (parent)
-      parent.children.push(node);
-    else
-      result.push(node);
+    if (parent) parent.children.push(node);
+    else result.push(node);
     stack.push(node);
   });
   return result;
@@ -233,11 +239,13 @@ function useLocalNav() {
     return headers.value.length > 0;
   });
   onContentUpdated(() => {
-    headers.value = getHeaders(frontmatter.value.outline ?? theme2.value.outline);
+    headers.value = getHeaders(
+      frontmatter.value.outline ?? theme2.value.outline,
+    );
   });
   return {
     headers,
-    hasLocalNav
+    hasLocalNav,
   };
 }
 
@@ -246,7 +254,7 @@ var theme = {
   Layout,
   enhanceApp: ({ app }) => {
     app.component("Badge", VPBadge);
-  }
+  },
 };
 var without_fonts_default = theme;
 export {
@@ -270,6 +278,6 @@ export {
   default19 as VPTeamPageTitle,
   without_fonts_default as default,
   useLocalNav,
-  useSidebar
+  useSidebar,
 };
 //# sourceMappingURL=@theme_index.js.map

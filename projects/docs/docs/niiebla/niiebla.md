@@ -7,13 +7,17 @@ NiiEBLA works around the concept of data streams, this opens the door to use mor
 For the sake of maintaining the code snippets easy to follow files as streams will be used on all the documentation.
 
 ## Getting Started
+
 First of all add the library into your Rust project:
+
 ```sh
 $ cargo add zelzip_niiebla
 ```
 
 ### Parsing
+
 From this you can parse any format you want using the `new(...)` method on the proper struct:
+
 ```rust
 use zelzip_niiebla::PreSwitchTicket;
 use std::fs::File;
@@ -27,6 +31,7 @@ println!(ticket.title_id);
 ```
 
 ### Dumping
+
 After making any change, let's say on the metadata of a title, you can compose the data again with the `dump(...)` method.
 
 ```rust
@@ -43,7 +48,9 @@ tmd.dump(&mut new_tmd_file).unwrap();
 ```
 
 ### Regard WAD/TAD files
+
 Be aware that **WAD/TAD files have a different API**, and explanation on this archive format can be found [on this documentation](./wad).
 
 ### Title IDs
+
 You may be also interested on information about the support of [Title IDs](./title_ids).

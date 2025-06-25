@@ -1,12 +1,15 @@
 # Title IDs
+
 The unique 64 bit value of a title.
 
 ## Formatting
+
 Title IDs are used all around the library, they are two 32 bit values, an upper value, usually related with the issuer of the title (the game publisher, an internal team, etc) and a lower value, usually acting as the unique identifier of the title.
 
 By default on printing they are formated with their two parts as hex with a dash as a divisor, but on lots of retail titles the lower part is a valid ASCII string. Also some titles IDs are well-known values on specific platforms.
 
 The library allows to access all this different meaning with "display wrappers":
+
 ```rust
 use zelzip_niiebla::TitleId;
 
