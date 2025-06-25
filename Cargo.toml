@@ -7,7 +7,6 @@ strip = true
 lto = true
 
 [workspace.package]
-publish = false
 edition = "2024"
 
 [workspace.dependencies]
@@ -16,7 +15,7 @@ byteorder = "1.5.0"
 aes = "0.8.4"
 cbc = { version = "0.1.2", features = ["std"] }
 block-padding = "0.3.3"
-util = { package = "zelzip_util", path = "projects/util", features = ["std"] }
+util = { package = "zelzip_util", version = "1.0.0", path = "projects/util", features = ["std"] }
 niiebla = { package = "zelzip_niiebla", path = "projects/niiebla" }
 cfg-if = "1.0.0"
 bitflags = "2.9.1"
