@@ -13,8 +13,9 @@ concurrency:
 
 on:
   workflow_dispatch:
-  tags:
-    - "publish/niiebla/**/*"
+  push:
+    tags:
+      - "publish/niiebla/**/*"
 
 jobs:
   publish:
