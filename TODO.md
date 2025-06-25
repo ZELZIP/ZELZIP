@@ -9,6 +9,7 @@
   - dirty directory
 - ZEL.ZIP Logo
 - TODO comments analyzer tool
+- Add warning in DOCS
 
 ## Future projects
 
