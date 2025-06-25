@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: MPL-2.0
 {
-inputs = {
+  inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
 
     flake-parts.url = "github:hercules-ci/flake-parts";
