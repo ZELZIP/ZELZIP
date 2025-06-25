@@ -1,8 +1,24 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+# SPDX-License-Identifier: MPL-2.0
+
 import typer
 import glob
 import util
 from plumbum import colors, FG
-from plumbum.cmd import rg, nix, alejandra, prettier, glow, taplo, cargo, ruff
+from plumbum.cmd import (
+    rg,
+    nix,
+    alejandra,
+    prettier,
+    glow,
+    taplo,
+    cargo,
+    ruff,
+    addlicense,
+)
 
 root_path = util.root_path()
 app = typer.Typer()
@@ -52,6 +68,9 @@ def check():
     print("Checkign Python files formatting")
     ruff["format", "--check"] & FG
 
+    print("Checking license headers")
+    addlicense("-s", "-l", "mpl", "-check", ".")
+
     print()
     print(colors.green & colors.underline | ">>> Everything is ok! <<<")
 
@@ -78,6 +97,9 @@ def fix():
 
     print("Fixing Python files formatting")
     ruff["format"] & FG
+
+    print("Fixing license headers")
+    addlicense("-s", "-l", "mpl", ".")
 
     print()
     print(colors.green & colors.underline | ">>> Done! <<<")
