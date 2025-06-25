@@ -2,8 +2,6 @@
 
 ## Roadmap
 
-- Warnings
-- Documentation
 - Port to Python the tooling
 - E2E testing
 

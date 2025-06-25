@@ -58,6 +58,8 @@
             cargo-all-features
 
             ## YAML, TS, JS, HTML, CSS, JSON, Markdown
+	    pnpm
+	    nodejs
             nodePackages.prettier
 
             # Apps
@@ -71,8 +73,6 @@
             ripgrep
 
             inputs'.toolkit.packages.default
-
-            openssl
           ];
         };
       };

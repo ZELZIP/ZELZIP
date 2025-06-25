@@ -70,7 +70,7 @@ pub struct TitleMetadata {
     pub group_id: u16,
 
     /// Bitflags of access right to the hardware, its meaning depends on the platform, the access
-    /// to this entry is recommended to use platform aware methods like [Self::has_ppc_access] or [Self::has_dvd_access].
+    /// to this entry is recommended to use platform aware methods like [Self::has_ppc_access_wii] or [Self::has_dvd_access_wii].
     pub access_rights: u32,
 
     /// The version of the title.
