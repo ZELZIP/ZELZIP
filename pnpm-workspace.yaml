@@ -1,0 +1,7 @@
+linkWorkspacePackages: true
+
+packages:
+  - "projects/**"
+
+catalog:
+  vitepress: ^1.6.3
