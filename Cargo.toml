@@ -24,7 +24,7 @@ sha1 = "0.10.6"
 sha2 = "0.10.9"
 
 [workspace.lints.rust]
-"missing_docs" = "warn"
+missing_docs = "warn"
 
 [workspace.lints.clippy]
 single_match = "warn"

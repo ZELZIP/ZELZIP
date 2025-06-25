@@ -182,10 +182,10 @@ mod tests {
 
         let mut pin = StreamPin::new(stream).unwrap();
 
-        pin.seek_from_pin(2);
+        pin.seek_from_pin(2).unwrap();
         assert_eq!(pin.read_u8().unwrap(), 7);
 
-        pin.seek_from_pin(-3);
+        pin.seek_from_pin(-3).unwrap();
         assert_eq!(pin.read_u8().unwrap(), 2);
     }
 }

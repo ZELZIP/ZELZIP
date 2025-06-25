@@ -7,7 +7,7 @@
 import typer
 import glob
 import util
-from plumbum import colors, FG
+from plumbum import colors, FG, local
 from plumbum.cmd import (
     rg,
     nix,
@@ -60,8 +60,10 @@ def check():
     taplo["format", "--check"].with_cwd(root_path) & FG
 
     print("Checking Rust files")
-    cargo["clippy"].with_cwd(root_path) & FG
-    cargo["check-all-features"].with_cwd(root_path) & FG
+    cargo["clippy", "--", "-D", "warnings"].with_cwd(root_path) & FG
+
+    with local.env(RUSTFLAGS="-D warnings"):
+        cargo["check-all-features", "--all-targets"].with_cwd(root_path) & FG
 
     print("Checking Rust files formatting")
     cargo["fmt", "--check"].with_cwd(root_path) & FG
@@ -156,6 +158,11 @@ def ignores():
                 file.write(line + "\n")
 
             file.truncate()
+
+
+@app.command()
+def test():
+    cargo["test"].with_cwd(root_path) & FG
 
 
 def main():
