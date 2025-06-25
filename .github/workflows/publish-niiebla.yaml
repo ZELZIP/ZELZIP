@@ -13,11 +13,11 @@ concurrency:
 
 on:
   workflow_dispatch:
-    tags:
-      - "publish/niiebla/*"
+  tags:
+    - "publish/niiebla/**/*"
 
 jobs:
-  check:
+  publish:
     runs-on: ubuntu-latest
 
     steps:
