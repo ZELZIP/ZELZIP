@@ -43,3 +43,6 @@ Ignore-like files (`.gitignore`, `.prettierignore`, etc) are builded by merging 
 ```sh
 $ dev ignores
 ```
+
+## Legal notice
+This project is a fan-made homebrew creation developed independently and is not affiliated with, endorsed by, or associated with Nintendo Co., Ltd or any of its subsidiaries, affiliates, or partners. All trademarks and copyrights referenced are the property of their respective owners.

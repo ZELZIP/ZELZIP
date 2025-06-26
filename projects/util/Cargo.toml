@@ -1,10 +1,22 @@
 [package]
-name = "zelzip_util"
-description = "TODO"
 version = "1.0.0"
-publish = true
+
+name = "zelzip_util"
+description = "This library is only intended for internal usage at the ZEL.ZIP monorepo. Please avoid using it directly."
+authors = ["The ZEL.ZIP team <contact@zel.zip>"]
+
 license = "MPL-2.0"
+
 edition.workspace = true
+publish = true
+
+# This library should not be used by the general public, better avoid search results on the registry
+keywords = []
+categories = []
+
+homepage = "https://zel.zip"
+repository = "https://github.com/ZELZIP/ZELZIP"
+
 
 [features]
 default = ["std"]

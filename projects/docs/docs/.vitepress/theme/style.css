@@ -1,0 +1,10 @@
+/*
+ * TODO(TRACK: https://github.com/vuejs/vitepress/issues/1037): Allow footer when the sidebar is displayed
+ */
+footer.VPFooter {
+    display: block !important;
+}
+
+footer.VPFooter > div{
+	width: 50%;
+}

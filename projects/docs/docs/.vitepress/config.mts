@@ -18,6 +18,8 @@ export default defineConfig({
           items: [
             { text: "NiiEBLA library", link: "/niiebla/niiebla" },
             { text: "ReNUS library", link: "/renus" },
+            { text: "Agebrk library", link: "/agebrk" },
+            { text: "Seto database", link: "/seto" },
             { text: "ViiENTO CLI", link: "/viiento" },
           ],
         },
@@ -35,8 +37,22 @@ export default defineConfig({
       ],
     },
 
+    editLink: {
+      pattern: 'https://github.com/ZELZIP/ZELZIP/edit/main/projects/docs/docs/:path',
+      text: 'Edit this page on GitHub'
+    },
+
+     search: {
+      provider: 'local'
+    },
+
     socialLinks: [
-      { icon: "github", link: "https://github.com/vuejs/vitepress" },
+      { icon: "github", link: "https://github.com/ZELZIP/ZELZIP" },
     ],
+
+    footer: {
+      message: 'This project is a fan-made homebrew creation developed independently and is not affiliated with, endorsed by, or associated with Nintendo Co., Ltd or any of its subsidiaries, affiliates, or partners. All trademarks and copyrights referenced are the property of their respective owners.',
+      copyright: 'All text presented here is under the <a href="https://www.mozilla.org/en-US/MPL/2.0/">Mozilla Public License Version 2.0</a> otherwise noted.'
+    },
   },
 });

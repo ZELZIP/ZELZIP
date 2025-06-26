@@ -1,11 +1,20 @@
 # TODO (Global)
 
-- Per-project README.md
-    - Remember on NiiEBLA to copy some things from the TODO.md
-- All metadata on crates
-- Add legal warning in DOCS (footer) (Add also search)
+- Agebrk
+    - Website integration
+    - ViiENTO integration
+    - Discord integration
+- ReNUS
+- Framio (LZ77 & ASH)
+- ViiENTO
+    - NiiEBLA
+    - ReNUS
+    - Agebrk
+    - Framio
+    - Add README.md
+- Credits
 - ZEL.ZIP Logo
-- ViiENTO (Rename?) support for NiiEBLA features
+- Another project for LZ77 and ASH compression.
 
 ## Future projects
 
