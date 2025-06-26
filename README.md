@@ -20,7 +20,7 @@ $ dev --help
 # Checking if the code will pass the CI/CD checks
 dev check
 
-# Try to fix some issues
+# Try to fix some code issues
 dev fix
 
 # Check missing TODO tasks

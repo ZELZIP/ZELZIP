@@ -1,16 +1,14 @@
 # TODO (Global)
 
-- Global README.md and everything else
-  - Note about this not being the document for the docs.
-  - "Getting Started"
-  - TODO convention explanation
-  - dirty directory
+- Per-project README.md
+    - Remember on NiiEBLA to copy some things from the TODO.md
 - All metadata on crates
+- Add legal warning in DOCS (footer) (Add also search)
 - ZEL.ZIP Logo
-- Add legal warning in DOCS
+- ViiENTO (Rename?) support for NiiEBLA features
 
 ## Future projects
 
-- Age limit breaker
+- Age limit breaker (agebrk)
 - ReNUS
 - Seto Database
