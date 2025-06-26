@@ -38,21 +38,22 @@ export default defineConfig({
     },
 
     editLink: {
-      pattern: 'https://github.com/ZELZIP/ZELZIP/edit/main/projects/docs/docs/:path',
-      text: 'Edit this page on GitHub'
+      pattern:
+        "https://github.com/ZELZIP/ZELZIP/edit/main/projects/docs/docs/:path",
+      text: "Edit this page on GitHub",
     },
 
-     search: {
-      provider: 'local'
+    search: {
+      provider: "local",
     },
 
-    socialLinks: [
-      { icon: "github", link: "https://github.com/ZELZIP/ZELZIP" },
-    ],
+    socialLinks: [{ icon: "github", link: "https://github.com/ZELZIP/ZELZIP" }],
 
     footer: {
-      message: 'This project is a fan-made homebrew creation developed independently and is not affiliated with, endorsed by, or associated with Nintendo Co., Ltd or any of its subsidiaries, affiliates, or partners. All trademarks and copyrights referenced are the property of their respective owners.',
-      copyright: 'All text presented here is under the <a href="https://www.mozilla.org/en-US/MPL/2.0/">Mozilla Public License Version 2.0</a> otherwise noted.'
+      message:
+        "This project is a fan-made homebrew creation developed independently and is not affiliated with, endorsed by, or associated with Nintendo Co., Ltd or any of its subsidiaries, affiliates, or partners. All trademarks and copyrights referenced are the property of their respective owners.",
+      copyright:
+        'All text presented here is under the <a href="https://www.mozilla.org/en-US/MPL/2.0/">Mozilla Public License Version 2.0</a> otherwise noted.',
     },
   },
 });

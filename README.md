@@ -6,9 +6,11 @@
 > If you don't know what is ZEL.ZIP, feel free to visit [our main page](https://zel.zip).
 
 ## Getting Started
+
 This repository holds most of the code of the ZEL.ZIP project, its development workflow is based on the use of [Nix flake devShells](https://nixos.wiki/wiki/Development_environment_with_nix-shell#nix_develop) and a custom build terminal toolkit called `dev`.
 
 This CLI tool allows for the most common development actions
+
 ```sh
 # Enable the Nix flake devShell
 $ nix develop
@@ -28,7 +30,9 @@ dev todo
 ```
 
 ## TODO comments format
+
 TODO comments use a simple format that tries to convey a little more info about the issue at a first glance: `TODO(<KIND>): <MESSAGE>`, where `<KIND>` can be:
+
 - `IMPROVE`: This code can be improved.
 - `CLEANUP`: This code, without adding new features, can be made easier to understand.
 - `IMPLEMENT`: Here is missing a new feature.
@@ -36,13 +40,17 @@ TODO comments use a simple format that tries to convey a little more info about 
 - `TRACK(<URL>)`: This issue depends on a fix by a third-party, the `<URL>` points to the relevant status about the development of the fix, usually being a code issue in GitHub, GitLab, Forgejo, etc.
 
 ## `dirty/` directories
+
 Any directory called `dirty/` will be ignore by lints and Git, feel free as a developer to add any required file for early testing.
 
 ## Ignore-like file generation
+
 Ignore-like files (`.gitignore`, `.prettierignore`, etc) are builded by merging all the `.ignore` files inside the `//ignores` reposity, to regenerate these files run:
+
 ```sh
 $ dev ignores
 ```
 
 ## Legal notice
+
 This project is a fan-made homebrew creation developed independently and is not affiliated with, endorsed by, or associated with Nintendo Co., Ltd or any of its subsidiaries, affiliates, or partners. All trademarks and copyrights referenced are the property of their respective owners.

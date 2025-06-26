@@ -5,6 +5,7 @@
 A parsing library for various Nintendo file formats. With accurate support for multiple niche entries and extensions (TikV1, Wii Savegame data, etc).
 
 Supports:
+
 - [`WAD`](https://wiibrew.org/wiki/WAD_files)/`TAD` files manipulation (with content adding, editing and removing), both installable (`Is`/`ib`) and backup (`Bk`) kinds.
 - Encryption/Decryption of content data for Nintendo Wii and Nintendo DSi titles.
 - [Ticket](https://wiibrew.org/wiki/Ticket) (pre Nintendo Switch) `TIK` files.
@@ -15,8 +16,10 @@ Supports:
 - [Nintendo Wii's savegame format](https://wiibrew.org/wiki/Savegame_Files).
 
 ## Limitations
+
 Be aware of the following limitations of the library:
 Soft limitations (will not be implemented unless a lot of interest is arised and documentation is improved):
+
 - Content viewing and editing only available on Wii and DSi titles (TMD group hashes are not properly updated).
 - CRL data on WAD files is not preserved.
 - Arbitrary content types is not supported (understading and documenting the meaning of its bitflags would be required).
@@ -24,8 +27,11 @@ Soft limitations (will not be implemented unless a lot of interest is arised and
 - "Section total size" and "size of each region" are not checked for correctness when parsing.
 
 Hard limitations (cannot or are to complex to be fixed):
+
 - 1:1 byte match on the V1 section of a `PreSwitchTicket` is not ensured.
+
 ## Quickstart
+
 First of all add the library into your Rust project:
 
 ```sh
@@ -33,6 +39,7 @@ $ cargo add zelzip_niiebla
 ```
 
 ### Parsing
+
 From this you can parse any format you want using the `new(...)` method on the proper struct:
 
 ```rust
@@ -67,4 +74,5 @@ tmd.dump(&mut new_tmd_file).unwrap();
 For more advanced use cases visit the [usage guide](https://docs.zel.zip/niiebla/niiebla.html)
 
 ## Legal notice
+
 This project is a fan-made homebrew creation developed independently and is not affiliated with, endorsed by, or associated with Nintendo Co., Ltd or any of its subsidiaries, affiliates, or partners. All trademarks and copyrights referenced are the property of their respective owners.

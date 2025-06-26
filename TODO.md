@@ -1,20 +1,21 @@
 # TODO (Global)
 
+- Credits
 - Agebrk
-    - Website integration
-    - ViiENTO integration
-    - Discord integration
+  - Website integration
+  - ViiENTO integration
+  - Discord integration
 - ReNUS
 - Framio (LZ77 & ASH)
 - ViiENTO
-    - NiiEBLA
-    - ReNUS
-    - Agebrk
-    - Framio
-    - Add README.md
-- Credits
+  - NiiEBLA
+  - ReNUS
+  - Agebrk
+  - Framio
+  - Add README.md
 - ZEL.ZIP Logo
-- Another project for LZ77 and ASH compression.
+- ZEL.ZIP org GitHub info
+- Monorepo description, tags and remove useless sections.
 
 ## Future projects
 
