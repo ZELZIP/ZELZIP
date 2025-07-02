@@ -1,8 +1,10 @@
 # TODO (Global)
 
 - Credits
-- Agebrk
+- Icebrk
   - Website integration
+    - ESLint config
+    - TSConfig
   - ViiENTO integration
   - Discord integration
 - ReNUS
@@ -10,15 +12,16 @@
 - ViiENTO
   - NiiEBLA
   - ReNUS
-  - Agebrk
+  - Icebrk
   - Framio
   - Add README.md
+- Seto database
+- `dev` command descriptions
 - ZEL.ZIP Logo
 - ZEL.ZIP org GitHub info
 - Monorepo description, tags and remove useless sections.
 
 ## Future projects
 
-- Age limit breaker (agebrk)
 - ReNUS
 - Seto Database

@@ -18,7 +18,6 @@ export default defineConfig({
           items: [
             { text: "NiiEBLA library", link: "/niiebla/niiebla" },
             { text: "ReNUS library", link: "/renus" },
-            { text: "Agebrk library", link: "/agebrk" },
             { text: "Seto database", link: "/seto" },
             { text: "ViiENTO CLI", link: "/viiento" },
           ],

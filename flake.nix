@@ -11,9 +11,6 @@
 
     fenix.url = "github:nix-community/fenix";
     fenix.inputs.nixpkgs.follows = "nixpkgs";
-
-    toolkit.url = "./projects/toolkit";
-    toolkit.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = inputs @ {flake-parts, ...}:
@@ -56,8 +53,13 @@
             taplo
 
             ## Rust
-            fenix.complete.toolchain
+            (with fenix;
+              combine [
+                stable.toolchain
+                targets.wasm32-unknown-unknown.stable.rust-std
+              ])
             cargo-all-features
+            wasm-pack
 
             ## YAML, TS, JS, HTML, CSS, JSON, Markdown
             pnpm

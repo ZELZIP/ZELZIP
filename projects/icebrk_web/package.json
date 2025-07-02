@@ -1,0 +1,22 @@
+{
+  "name": "icebrk-web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "icebrk": "file:../icebrk_wasm",
+    "@picocss/pico": "catalog:"
+  },
+  "devDependencies": {
+    "sass": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-top-level-await": "catalog:",
+    "vite-plugin-wasm": "catalog:"
+  }
+}

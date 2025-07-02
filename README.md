@@ -9,7 +9,19 @@
 
 This repository holds most of the code of the ZEL.ZIP project, its development workflow is based on the use of [Nix flake devShells](https://nixos.wiki/wiki/Development_environment_with_nix-shell#nix_develop) and a custom build terminal toolkit called `dev`.
 
-This CLI tool allows for the most common development actions
+After entering the devShell:
+
+```sh
+$ nix develop
+```
+
+If you are going to work with a WASM library (`icebrk-wasm`, etc) remember to compile and build the NPM packages first:
+
+```sh
+$ dev wasm
+```
+
+This CLI tool allows for the most common development actions:
 
 ```sh
 # Enable the Nix flake devShell
@@ -54,3 +66,5 @@ $ dev ignores
 ## Legal notice
 
 This project is a fan-made homebrew creation developed independently and is not affiliated with, endorsed by, or associated with Nintendo Co., Ltd or any of its subsidiaries, affiliates, or partners. All trademarks and copyrights referenced are the property of their respective owners.
+
+All files presented here are under the [Mozilla Public License Version 2.0](./LICENSE.txt) otherwise noted.

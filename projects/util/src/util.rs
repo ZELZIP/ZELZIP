@@ -9,9 +9,6 @@
 //! Has partial support for `no_std` mode by disabling the default `std` feature flag. Extra suport
 //! for "alloc-compatible" `no_std` environments is available by enabling the `alloc` feature flag.
 
-#![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(doc, feature(doc_auto_cfg))]
-
 #[cfg(feature = "alloc")]
 extern crate alloc;
 

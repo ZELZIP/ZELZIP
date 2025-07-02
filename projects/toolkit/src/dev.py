@@ -20,8 +20,21 @@ from plumbum.cmd import (
     addlicense,
 )
 
+wasm_pack = local["wasm-pack"]
+
 root_path = util.root_path()
 app = typer.Typer()
+
+
+@app.command()
+def wasm():
+    for project in ["icebrk"]:
+        wasm_pack[
+            "build",
+            f"{root_path}/projects/{project}/",
+            "--out-dir",
+            f"{root_path}/projects/{project}_wasm/",
+        ] & FG
 
 
 @app.command()

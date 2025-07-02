@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ZEL.ZIP IceBrk</title>
+
+    <script async type="module" src="/src/bootstrap.ts"></script>
+  </head>
+  <body>
+    <main class="container">
+      <hgroup>
+        <h1><a href="https://zel.zip">ZEL.ZIP</a> IceBrk</h1>
+        <p>Nintendo Devices Parental Control Master Key Generator</p>
+      </hgroup>
+
+      <form id="form">
+        <fieldset role="group">
+          <select
+            aria-label="Select your platform..."
+            id="platform-input"
+            required
+          >
+            <option selected disabled value="">Select your platform...</option>
+            <option value="wii">Nintendo Wii</option>
+            <option value="dsi">Nintendo DSi</option>
+            <option value="wiiu">Nintendo Wii U</option>
+            <option value="3ds">Nintendo 3DS</option>
+            <option value="switch">Nintendo Switch</option>
+          </select>
+          <select
+            aria-label="Select your version..."
+            id="version-input"
+            required
+          >
+            <option selected disabled value="">
+              Select a platform first...
+            </option>
+          </select>
+        </fieldset>
+
+        <label>
+          Inquiry number:
+          <input
+            id="inquiry-number-input"
+            type="number"
+            placeholder="12345"
+            min="0"
+            required
+          />
+        </label>
+
+        <fieldset id="date-fieldset" disabled>
+          <div class="grid">
+            <label>
+              Day:
+              <input
+                id="day-input"
+                type="number"
+                placeholder="16"
+                min="1"
+                max="31"
+                required
+              />
+            </label>
+
+            <label>
+              Month:
+	      <select>
+            	<option selected disabled value="">Select your month...</option>
+            <option value="1">January</option>
+            <option value="dsi">Nintendo DSi</option>
+            <option value="wiiu">Nintendo Wii U</option>
+            <option value="3ds">Nintendo 3DS</option>
+            <option value="switch">Nintendo Switch</option>
+	      </select>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset id="device-id-fieldset" disabled>
+          <label>
+            Device ID:
+            <input placeholder="TODO THIS IS NOT FINISHED" required />
+          </label>
+        </fieldset>
+
+        <input type="submit" value="Generate master key" />
+      </form>
+
+      <article>
+        <header>Your master key is:</header>
+        <h2 id="master-key-label">N/A</h2>
+      </article>
+    </main>
+  </body>
+</html>
