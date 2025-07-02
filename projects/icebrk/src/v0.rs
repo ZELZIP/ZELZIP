@@ -52,7 +52,7 @@ const fn get_crc(platform: Platform) -> (&'static crc::Algorithm<u32>, u32) {
 /// Only works on Wii, DSi, 3DS (from 1.0.0 to 6.3.0) and Wii U (from 1.0.0 to 4.1.0).
 #[wasm_bindgen]
 pub fn calculate_v0_master_key(platform: Platform, inquiry_number: u32, day: u8, month: u8) -> u32 {
-    assert!(inquiry_number <= 99999999);
+    assert!(inquiry_number <= 99_999_999);
 
     assert!(day > 0);
     assert!(day <= 31);
