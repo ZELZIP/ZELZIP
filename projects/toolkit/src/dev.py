@@ -8,6 +8,7 @@ import typer
 import glob
 import util
 from plumbum import colors, FG, local
+import json
 from plumbum.cmd import (
     rg,
     nix,
@@ -20,6 +21,7 @@ from plumbum.cmd import (
     addlicense,
     jq,
     sponge,
+    pnpm,
 )
 
 wasm_pack = local["wasm-pack"]
@@ -29,9 +31,19 @@ root_path = util.root_path()
 app = typer.Typer()
 
 
+WASM_PROJECTS = ["icebrk"]
+
+
 @app.command()
-def wasm():
-    for project in ["icebrk"]:
+def wasm(project: list[str] = None):
+    projects = []
+
+    if project is None:
+        projects = WASM_PROJECTS
+    else:
+        projects = project
+
+    for project in projects:
         out_path = f"{root_path}/projects/{project}_wasm"
 
         wasm_pack[
