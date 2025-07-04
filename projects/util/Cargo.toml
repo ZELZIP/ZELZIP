@@ -1,5 +1,5 @@
 [package]
-version = "1.0.0"
+version = "2.0.0"
 
 name = "zelzip_util"
 description = "This library is only intended for internal usage at the ZEL.ZIP monorepo. Please avoid using it directly."
