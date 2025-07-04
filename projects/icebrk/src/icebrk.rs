@@ -12,10 +12,6 @@ use wasm_bindgen::prelude::*;
 
 type HmacSha256 = Hmac<Sha256>;
 
-#[cfg(target_family = "wasm")]
-#[global_allocator]
-static ALLOC: WeeAlloc = WeeAlloc::INIT;
-
 mod v0;
 mod v1;
 mod v2;

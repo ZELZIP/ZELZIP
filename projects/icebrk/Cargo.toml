@@ -32,7 +32,6 @@ thiserror.workspace = true
 aes.workspace = true
 ctr.workspace = true
 derive_jserror.workspace = true
-wee_alloc.workspace = true
 
 [dev-dependencies]
 wasm-bindgen-test.workspace = true
