@@ -8,17 +8,23 @@
 
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
-use thiserror::Error;
 use wasm_bindgen::prelude::*;
+use wee_alloc::WeeAlloc;
 
 type HmacSha256 = Hmac<Sha256>;
+
+#[cfg(target_family = "wasm")]
+#[global_allocator]
+static ALLOC: WeeAlloc = WeeAlloc::INIT;
 
 mod v0;
 mod v1;
 mod v2;
+mod v3;
 
 /// Generic enum for a few platforms by Nintendo.
 #[wasm_bindgen]
+#[derive(PartialEq)]
 pub enum Platform {
     /// The Nintendo Wii platform.
     Wii,
@@ -37,14 +43,16 @@ pub enum Platform {
 }
 
 pub use v0::calculate_v0_master_key;
-pub use v1::{V1Error, calculate_v1_master_key};
-pub use v2::{V2Error, calculate_v2_master_key};
+pub use v1::{calculate_v1_master_key, V1Error};
+pub use v2::{calculate_v2_master_key, V2Error};
+pub use v3::{calculate_v3_master_key, V3Error};
 
 fn calculate_master_key_shared_v1_and_v2(
     hmac_key: &[u8; 32],
     inquiry_number: u64,
     day: u8,
     month: u8,
+    big_endian: bool,
 ) -> u32 {
     // The month and day with a leading zero when the number is not two digits long
     // and the inquiry number (also padded with zeroes)
@@ -62,7 +70,12 @@ fn calculate_master_key_shared_v1_and_v2(
         .expect("The HMAC hash is always long enough");
 
     println!("{hash:?}");
-    println!("OFFUU: {}", u32::from_le_bytes(hash));
 
-    u32::from_le_bytes(hash) % 100000
+    let output = if big_endian {
+        u32::from_be_bytes(hash)
+    } else {
+        u32::from_le_bytes(hash)
+    };
+
+    output % 100000
 }

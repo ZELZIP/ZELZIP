@@ -18,9 +18,12 @@ from plumbum.cmd import (
     cargo,
     ruff,
     addlicense,
+    jq,
+    sponge,
 )
 
 wasm_pack = local["wasm-pack"]
+wasm_opt = local["wasm-opt"]
 
 root_path = util.root_path()
 app = typer.Typer()
@@ -29,12 +32,25 @@ app = typer.Typer()
 @app.command()
 def wasm():
     for project in ["icebrk"]:
+        out_path = f"{root_path}/projects/{project}_wasm"
+
         wasm_pack[
-            "build",
-            f"{root_path}/projects/{project}/",
-            "--out-dir",
-            f"{root_path}/projects/{project}_wasm/",
+            "build", f"{root_path}/projects/{project}/", "--out-dir", out_path
         ] & FG
+
+        wasm_filename = glob.glob("*.wasm", root_dir=out_path)[0]
+        wasm_file_path = f"{out_path}/{wasm_filename}"
+
+        wasm_opt[
+            "-Oz", "--enable-bulk-memory-opt", "-o", wasm_file_path, wasm_file_path
+        ] & FG
+
+        package_json_path = f"{out_path}/package.json"
+
+        new_package_json_text = jq[f'.name = "@zel.zip/{project}"', package_json_path]()
+
+        with open(package_json_path, "w") as file:
+            file.write(new_package_json_text)
 
 
 @app.command()

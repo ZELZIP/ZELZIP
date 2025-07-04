@@ -3,18 +3,17 @@ version = "1.0.0"
 
 name = "zelzip_icebrk"
 description = 'Implementation of the different algorithms used on Nintendo consoles to generate the parental control master key.'
-authors = ["The ZEL.ZIP team <contact@zel.zip>"]
 
-license = "MPL-2.0"
-
-edition.workspace = true
 publish = true
 
 keywords = ["generator", "key", "master-key", "algorightm"]
 categories = ["algorithms"]
 
-homepage = "https://zel.zip"
-repository = "https://github.com/ZELZIP/ZELZIP"
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 # TODO(TRACK: https://github.com/rustwasm/wasm-pack/issues/1501): Fix for Bulk Memory Operation on WASM
 [package.metadata.wasm-pack.profile.release]
@@ -32,9 +31,8 @@ hmac.workspace = true
 thiserror.workspace = true
 aes.workspace = true
 ctr.workspace = true
-
-# TODO(IMPROVE): Only on WASM + DEBUG
-console_error_panic_hook = { workspace = true, optional = true }
+derive_jserror.workspace = true
+wee_alloc.workspace = true
 
 [dev-dependencies]
 wasm-bindgen-test.workspace = true

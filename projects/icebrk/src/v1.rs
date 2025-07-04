@@ -1,12 +1,13 @@
-use hmac::{Hmac, Mac};
-use sha2::Sha256;
+use derive_jserror::JsError;
 use thiserror::Error;
+use wasm_bindgen::prelude::*;
 
-const HMAC_KEY_REGION_00: &[u8; 32] = include_bytes!("v1/3ds_hmac_key_00.bin");
-const HMAC_KEY_REGION_01: &[u8; 32] = include_bytes!("v1/3ds_hmac_key_01.bin");
-const HMAC_KEY_REGION_02: &[u8; 32] = include_bytes!("v1/3ds_hmac_key_02.bin");
+const HMAC_KEY_REGION_00: &[u8; 32] = include_bytes!("v1/3ds_hmac_key_region_00.bin");
+const HMAC_KEY_REGION_01: &[u8; 32] = include_bytes!("v1/3ds_hmac_key_region_01.bin");
+const HMAC_KEY_REGION_02: &[u8; 32] = include_bytes!("v1/3ds_hmac_key_region_02.bin");
 
-#[derive(Error, Debug)]
+#[derive(Error, JsError, Debug)]
+#[allow(missing_docs)]
 pub enum V1Error {
     #[error("The inquiry number has encoded an unknown region: {0}")]
     UnknownRegion(u8),
@@ -22,6 +23,7 @@ pub enum V1Error {
 ///
 /// This function internal uses a set of HMAC keys, one for each region of the 3DS, at this moment
 /// only the keys for the regions 0, 1 and 2 have been found.
+#[wasm_bindgen]
 pub fn calculate_v1_master_key(inquiry_number: u64, day: u8, month: u8) -> Result<u32, V1Error> {
     assert!(inquiry_number <= 9_999_999_999);
 
@@ -31,12 +33,12 @@ pub fn calculate_v1_master_key(inquiry_number: u64, day: u8, month: u8) -> Resul
     assert!(month > 0);
     assert!(month <= 12);
 
-    let region = inquiry_number / 1000000000;
+    let region = inquiry_number / 1_000_000_000;
 
     let hmac_key = match region {
-        0 => HMAC_KEY_REGION_00,
-        1 => HMAC_KEY_REGION_01,
-        2 => HMAC_KEY_REGION_02,
+        0x00 => HMAC_KEY_REGION_00,
+        0x01 => HMAC_KEY_REGION_01,
+        0x02 => HMAC_KEY_REGION_02,
 
         _ => return Err(V1Error::UnknownRegion(region as u8)),
     };
@@ -46,6 +48,7 @@ pub fn calculate_v1_master_key(inquiry_number: u64, day: u8, month: u8) -> Resul
         inquiry_number,
         day,
         month,
+        false,
     ))
 }
 

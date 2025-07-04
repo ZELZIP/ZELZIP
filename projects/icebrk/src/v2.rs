@@ -1,10 +1,13 @@
 use crate::Platform;
-use aes::cipher::{KeyIvInit, StreamCipher, StreamCipherSeek};
+use aes::cipher::{KeyIvInit, StreamCipher};
+use derive_jserror::JsError;
 use thiserror::Error;
+use wasm_bindgen::prelude::*;
 
 type Aes128Ctr64LE = ctr::Ctr128BE<aes::Aes128>;
 
-// Sorry.
+// Sorry, this is the only way to do this and avoid any dynamic dispatch ([`include_dir`](https://docs.rs/include_dir/latest/include_dir/) and friends)
+
 const THE_3DS_AES_KEY_REGION_00_AND_09: &[u8] =
     include_bytes!("v2/3ds_aes_key_region_00_and_09.bin");
 const THE_3DS_AES_KEY_REGION_01: &[u8] = include_bytes!("v2/3ds_aes_key_region_01.bin");
@@ -278,7 +281,8 @@ const WII_U_HMAC_KEY_ENC_REGION_01: &[u8] = include_bytes!("v2/wii_u_hmac_key_re
 const WII_U_HMAC_KEY_ENC_REGION_02: &[u8] = include_bytes!("v2/wii_u_hmac_key_region_02.bin.enc");
 const WII_U_HMAC_KEY_ENC_REGION_03: &[u8] = include_bytes!("v2/wii_u_hmac_key_region_03.bin.enc");
 
-#[derive(Error, Debug)]
+#[derive(Error, JsError, Debug)]
+#[allow(missing_docs)]
 pub enum V2Error {
     #[error("Unknown region encoded inside the inquiry number: {0}")]
     UnknownRegion(u64),
@@ -287,15 +291,35 @@ pub enum V2Error {
     UnknownRegionOrVersion(u64, u64),
 }
 
+/// Calculate the master key for the parental control using the v2 algorithm. The inquire number
+/// cannot be bigger than 10 digits and the date must be valid (there are some loose checks).
+///
+/// Remember that the given master key must be presented with the correct amount of leading zeroes
+/// to always have 5 digits.
+///
+/// Only works on 3DS (from 7.2.0 to 11.15.0) and Wii U (from 5.0.0 to 5.5.5)
+///
+/// This function internal uses a set of HMAC and AES keys, it's unknown if all keys have been
+/// found.
+#[wasm_bindgen]
 pub fn calculate_v2_master_key(
     platform: Platform,
     inquiry_number: u64,
     day: u8,
     month: u8,
 ) -> Result<u32, V2Error> {
+    assert!(inquiry_number <= 9_999_999_999);
+
+    assert!(day > 0);
+    assert!(day <= 31);
+
+    assert!(month > 0);
+    assert!(month <= 12);
+
     let region = inquiry_number / 1_000_000_000;
     let version = (inquiry_number / 10_000_000) % 100;
 
+    #[allow(clippy::expect_used)]
     let aes_key: &[u8; 16] = match platform {
         Platform::WiiU => match region {
             0x01 => WII_U_AES_KEY_REGION_01,
@@ -321,9 +345,9 @@ pub fn calculate_v2_master_key(
 
     let hmac_enc = match platform {
         Platform::WiiU => match region {
-            0x01 => WII_U_AES_KEY_REGION_01,
-            0x02 => WII_U_AES_KEY_REGION_02,
-            0x03 => WII_U_AES_KEY_REGION_03,
+            0x01 => WII_U_HMAC_KEY_ENC_REGION_01,
+            0x02 => WII_U_HMAC_KEY_ENC_REGION_02,
+            0x03 => WII_U_HMAC_KEY_ENC_REGION_03,
 
             _ => return Err(V2Error::UnknownRegion(region)),
         },
@@ -492,6 +516,7 @@ pub fn calculate_v2_master_key(
         inquiry_number,
         day,
         month,
+        platform == Platform::WiiU,
     ))
 }
 

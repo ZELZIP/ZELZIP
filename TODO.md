@@ -19,7 +19,8 @@
 - `dev` command descriptions
 - ZEL.ZIP Logo
 - ZEL.ZIP org GitHub info
-- Monorepo description, tags and remove useless sections.
+- Wiki in docs about parental control algorithm
+- Monorepo description, tags and remove useless sections in GitHub
 
 ## Future projects
 

@@ -3,18 +3,17 @@ version = "0.2.0"
 
 name = "zelzip_niiebla"
 description = "A parsing library for various Nintendo file formats."
-authors = ["The ZEL.ZIP team <contact@zel.zip>"]
 
-license = "MPL-2.0"
-
-edition.workspace = true
 publish = true
 
 keywords = ["homebrew", "binary-format", "parsing", "dumping", "modding"]
 categories = ["parsing"]
 
-homepage = "https://zel.zip"
-repository = "https://github.com/ZELZIP/ZELZIP"
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [lib]
 path = "src/niiebla.rs"

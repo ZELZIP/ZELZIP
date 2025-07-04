@@ -2,7 +2,12 @@
 name = "viiento"
 version = "0.1.0"
 publish = false
+
+authors.workspace = true
+license.workspace = true
 edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [[bin]]
 name = "viiento"
