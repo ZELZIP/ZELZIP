@@ -34,5 +34,5 @@ jobs:
       - run: dev wasm --project icebrk
 
       - run: pnpm publish ./projects/icebrk_wasm --access public
-        env: 
+        env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -8,7 +8,6 @@ import typer
 import glob
 import util
 from plumbum import colors, FG, local
-import json
 from plumbum.cmd import (
     rg,
     nix,
@@ -20,8 +19,6 @@ from plumbum.cmd import (
     ruff,
     addlicense,
     jq,
-    sponge,
-    pnpm,
 )
 
 wasm_pack = local["wasm-pack"]

@@ -9,7 +9,6 @@
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
 use wasm_bindgen::prelude::*;
-use wee_alloc::WeeAlloc;
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -43,9 +42,9 @@ pub enum Platform {
 }
 
 pub use v0::calculate_v0_master_key;
-pub use v1::{calculate_v1_master_key, V1Error};
-pub use v2::{calculate_v2_master_key, V2Error};
-pub use v3::{calculate_v3_master_key, V3Error};
+pub use v1::{V1Error, calculate_v1_master_key};
+pub use v2::{V2Error, calculate_v2_master_key};
+pub use v3::{V3Error, calculate_v3_master_key};
 
 fn calculate_master_key_shared_v1_and_v2(
     hmac_key: &[u8; 32],

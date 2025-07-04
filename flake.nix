@@ -60,7 +60,7 @@
               ])
             cargo-all-features
             wasm-pack
-	    binaryen
+            binaryen
 
             ## YAML, TS, JS, HTML, CSS, JSON, Markdown
             pnpm
