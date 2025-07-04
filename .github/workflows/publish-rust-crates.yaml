@@ -23,7 +23,7 @@ on:
 jobs:
   publish-crates:
     runs-on: ubuntu-latest
-    if: contains(github.ref_name, "crates")
+    if: contains(github.ref_name, 'crates')
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.2.2
