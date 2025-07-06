@@ -1,0 +1,71 @@
+---
+import GitHub from "../svg/github.svg";
+import ThemeToggle from "../svg/theme-toggle.svg";
+import "theme-toggles/css/expand.min.css";
+---
+
+<header class="container">
+  <nav class="nav">
+    <ul>
+      <li>
+        <strong><a class="contrast" href="https://zel.zip">ZEL.ZIP</a></strong>
+      </li>
+    </ul>
+    <ul>
+      <li>
+        <a
+          class="github-link contrast"
+          target="_blank"
+          href="https://github.com/ZELZIP/ZELZIP"><GitHub /></a
+        >
+      </li>
+      <a id="theme-toggle" class="contrast theme-toggle"><ThemeToggle /></a>
+    </ul>
+  </nav>
+</header>
+
+<style>
+  .nav {
+    font-size: 1.5rem;
+  }
+  .nav a:not(:hover) {
+    text-decoration: none;
+  }
+
+  .github-link {
+    margin-right: 1px;
+  }
+</style>
+
+<script>
+  const themeToggle = document.getElementById("theme-toggle");
+
+  function getTheme(): string | null {
+    return localStorage.getItem("theme");
+  }
+
+  function setTheme(isDarkMode: boolean) {
+    let theme = "light";
+
+    if (isDarkMode) {
+      theme = "dark";
+      themeToggle.classList.add("theme-toggle--toggled");
+    } else {
+      themeToggle.classList.remove("theme-toggle--toggled");
+    }
+
+    localStorage.setItem("theme", theme);
+    document.documentElement.dataset.theme = theme;
+  }
+
+  if (getTheme() === null) {
+    setTheme(window.matchMedia("(prefers-color-scheme: dark)").matches);
+  } else {
+    // This makes an extra useless write to the localStorage
+    setTheme(getTheme() === "dark");
+  }
+
+  themeToggle.addEventListener("click", () => {
+    setTheme(!(getTheme() === "dark"));
+  });
+</script>

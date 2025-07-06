@@ -12,7 +12,7 @@ from plumbum.cmd import (
     rg,
     nix,
     alejandra,
-    prettier,
+    pnpm,
     glow,
     taplo,
     cargo,
@@ -70,7 +70,7 @@ def todo():
 
     for file in glob.iglob("./**/TODO.md", root_dir=root_path, recursive=True):
         print(colors.blue & colors.bold & colors.underline | f">>> FILE: {file} <<<")
-        glow[file] & FG
+        glow[f"{root_path}/{file}"] & FG
         print()
 
     rg[
@@ -79,7 +79,10 @@ def todo():
         "--iglob",
         "!TODO.md",
         "--iglob",
-        "!/projects/toolkit/todo.bash",
+        "!/projects/toolkit/src/dev.py",
+        "--iglob",
+        "!/README.md",
+        "--hidden",
     ] & FG
 
 
@@ -95,9 +98,10 @@ def check():
     print("Checking Nix files formatting")
     alejandra[root_path, "--check"] & FG
 
-    print("Checking YAML, TS, JS, HTML, CSS, JSON and Markdown files")
+    print("Checking web related files")
+    pnpm["eslint", root_path] & FG
     # Prettier does weird things with the CWD even when setting an absolute path
-    prettier[".", "--check"].with_cwd(root_path) & FG
+    pnpm["prettier", ".", "--check"].with_cwd(root_path) & FG
 
     print("Checking TOML files formatting")
     taplo["lint"].with_cwd(root_path) & FG
@@ -146,9 +150,10 @@ def fix():
     print("Fixing Nix files formatting")
     alejandra[root_path] & FG
 
-    print("Fixing YAML, TS, JS, HTML, CSS, JSON and Markdown files")
+    print("Fixing web related files")
+    pnpm["eslint", root_path, "--fix"] & FG
     # Prettier does weird things with the CWD even when setting an absolute path
-    prettier[root_path, "--write"].with_cwd(root_path) & FG
+    pnpm["prettier", root_path, "--write"].with_cwd(root_path) & FG
 
     print("Checking TOML files")
     taplo["format"].with_cwd(root_path) & FG
@@ -204,15 +209,12 @@ def ignores():
             ignore_lines.append(f">>> FILE: {path} <<<")
             ignore_lines += file.readlines()
 
-    for filename in [".gitignore", ".prettierignore"]:
-        print(f"Writing {filename}")
+    with open(f"{root_path}/.gitignore", "w") as file:
+        for line in ignore_lines:
+            print(line)
+            file.write(line + "\n")
 
-        with open(f"{root_path}/{filename}", "w") as file:
-            for line in ignore_lines:
-                print(line)
-                file.write(line + "\n")
-
-            file.truncate()
+        file.truncate()
 
 
 @app.command()

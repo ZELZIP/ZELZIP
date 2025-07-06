@@ -1,2 +1,4 @@
-**/dirty/
-projects/*_wasm/
+**/dirty/**/*
+projects/*_wasm/**/*
+**/dist/**/*
+**/.astro/**/*

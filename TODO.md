@@ -17,6 +17,8 @@
   - Add README.md
 - Seto database
 - `dev` command descriptions
+  - `setup` command
+- PNPM cache on GitHub actions
 - ZEL.ZIP Logo
 - ZEL.ZIP org GitHub info
 - Wiki in docs about parental control algorithm

@@ -65,6 +65,7 @@
             ## YAML, TS, JS, HTML, CSS, JSON, Markdown
             pnpm
             nodejs
+            vscode-langservers-extracted
             nodePackages.prettier
 
             ## Python

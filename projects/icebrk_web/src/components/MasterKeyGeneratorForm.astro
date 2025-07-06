@@ -29,9 +29,30 @@ const { id } = Astro.props;
       <DateSelector id="date-selector" />
     </div>
 
-    <input type="submit" value="Generate master key" />
+    <article hidden id="unsupported-version-message">
+      <header>
+        Master key generation not available on Nintendo Switch 4.0.0+!
+      </header>
+      After the 4.0.0 version of Horizon OS, the unique Device ID stored inside the
+      device is required to calculate the master key. This value is only obtainable
+      using homebrew tools, adding support for this is redundant and useless as <a
+        href="https://gbatemp.net/threads/reset-parental-control-nx-an-easy-to-reset-the-pin-for-controls.556891/"
+        data-tooltip='See "Reset Parental Control NX" app'
+        >these same tools can be used to unlock the console</a
+      >.
+    </article>
+
+    <input id="submit-button" type="submit" value="Generate master key" />
   </form>
 </master-key-generator-form>
+
+<style lang="scss">
+  @use "@picocss/pico/scss/colors";
+
+  article > header {
+    color: colors.$red-500;
+  }
+</style>
 
 <script>
   import {
@@ -44,8 +65,12 @@ const { id } = Astro.props;
 
   class MasterKeyGeneratorForm extends HTMLElement {
     connectedCallback() {
-	    this.inquiryNumberInput = this.querySelector("#inquiry-number-input");
-	    this.dateSelectorWrapper = this.querySelector("#date-selector-wrapper");
+      this.inquiryNumberInput = this.querySelector("#inquiry-number-input");
+      this.dateSelectorWrapper = this.querySelector("#date-selector-wrapper");
+      this.submitButton = this.querySelector("#submit-button");
+      this.unsupportedVersionMessage = this.querySelector(
+        "#unsupported-version-message",
+      );
 
       const platformSelector = this.querySelector("#platform-selector");
       const dateSelector = this.querySelector("#date-selector");
@@ -113,25 +138,35 @@ const { id } = Astro.props;
 
         case AlgorithmVersion.v2:
           return calculate_v2_master_key(
-            BigInt(this.platform),
-            inquiryNumber,
+            this.platform,
+            BigInt(inquiryNumber),
             this.date.day,
             this.date.month,
           );
 
         case AlgorithmVersion.v3:
-		      return calculate_v3_master_key(BigInt(inquiryNumber));
+          return calculate_v3_master_key(BigInt(inquiryNumber));
       }
     }
 
     versionChanged(version: number) {
-	    this.version = version;
+      this.version = version;
 
-	    if (version === 3) {
-		    this.dateSelectorWrapper.hidden = true;
-	    } else {
-		    this.dateSelectorWrapper.hidden = false;
-	    }
+      if (version >= 3) {
+        this.dateSelectorWrapper.hidden = true;
+      } else {
+        this.dateSelectorWrapper.hidden = false;
+      }
+
+      if (version === 4) {
+        this.submitButton.disabled = true;
+        this.inquiryNumberInput.disabled = true;
+        this.unsupportedVersionMessage.hidden = false;
+      } else {
+        this.submitButton.disabled = false;
+        this.inquiryNumberInput.disabled = false;
+        this.unsupportedVersionMessage.hidden = true;
+      }
 
       if (version > 0) {
         this.inquiryNumberInput.max = "9999999999";

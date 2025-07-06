@@ -15,7 +15,7 @@ const HMAC_KEY_REGION_02: &[u8; 32] = include_bytes!("v1/3ds_hmac_key_region_02.
 #[derive(Error, JsError, Debug)]
 #[allow(missing_docs)]
 pub enum V1Error {
-    #[error("The inquiry number has encoded an unknown region: {0}")]
+    #[error("The inquiry number has an unknown region encoded: {0}")]
     UnknownRegion(u8),
 }
 

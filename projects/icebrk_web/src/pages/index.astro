@@ -1,21 +1,12 @@
 ---
 import Base from "@layouts/Base.astro";
 import MasterKeyGeneratorForm from "@components/MasterKeyGeneratorForm.astro";
-import "theme-toggles/css/expand.min.css";
+import Header from "@components/Header.astro";
+import Footer from "@components/Footer.astro";
 ---
 
 <Base title="ZEL.ZIP IceBrk">
-	<div id="color-scheme-wrapper">
-  <header class="container">
-    <nav>
-      <ul>
-        <li><strong>ZEL.ZIP</strong></li>
-      </ul>
-      <ul>
-	      <a id="switch-color-scheme" class="contrast">SWITCH!</a>
-      </ul>
-    </nav>
-  </header>
+  <Header />
 
   <main class="container">
     <hgroup>
@@ -31,15 +22,7 @@ import "theme-toggles/css/expand.min.css";
     </article>
   </main>
 
-  <!-- TODO(IMPROVE) -->
-  <footer class="container">
-    This project is a fan-made homebrew creation developed independently and is
-    not affiliated with, endorsed by, or associated with Nintendo Co., Ltd or
-    any of its subsidiaries, affiliates, or partners. All trademarks and
-    copyrights referenced are the property of their respective owners. All tools
-    provider by ZEL.ZIP are open source.
-  </footer>
-	</div>
+  <Footer />
 </Base>
 
 <style lang="scss">
@@ -55,7 +38,6 @@ import "theme-toggles/css/expand.min.css";
     "master-key-generator-form",
   );
   const masterKeyText = document.getElementById("master-key-text");
-  const colorSchemeWrapper = document.getElementById("color-scheme-wrapper");
 
   masterKeyGeneratorForm.addEventListener("masterKeyChanged", (e) => {
     masterKeyText.textContent = e.detail.masterKey;
@@ -65,6 +47,4 @@ import "theme-toggles/css/expand.min.css";
       masterKeyText.classList.remove("failed");
     }
   });
-
-
 </script>
