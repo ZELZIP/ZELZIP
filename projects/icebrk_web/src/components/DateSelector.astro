@@ -1,0 +1,84 @@
+---
+interface Props {
+  id: string;
+}
+
+const { id } = Astro.props;
+---
+
+<date-selector id={id}>
+  <fieldset class="grid">
+    <label>
+      Day:
+      <input id="day-input" type="number" min="1" max="31" placeholder="12" />
+    </label>
+
+    <label>
+      Month:
+      <select id="month-input" aria-label="Select a month">
+        <option selected disabled value="">Select a month:</option>
+        <option value="1">January</option>
+        <option value="2">February</option>
+        <option value="3">March</option>
+        <option value="4">April</option>
+        <option value="5">May</option>
+        <option value="6">June</option>
+        <option value="7">July</option>
+        <option value="8">August</option>
+        <option value="9">September</option>
+        <option value="10">October</option>
+        <option value="11">November</option>
+        <option value="12">December</option>
+      </select>
+    </label>
+  </fieldset>
+</date-selector>
+
+<script>
+  class DateSelector extends HTMLElement {
+    connectedCallback() {
+      this.dayInput = this.querySelector("#day-input");
+      this.monthInput = this.querySelector("#month-input");
+
+      this.dayInput.addEventListener("change", this.sendDate.bind(this));
+
+      this.monthInput.addEventListener("change", () => {
+        const month = this.getMonth();
+        this.setDayInputMax(month);
+        this.sendDate();
+      });
+    }
+
+    private getMonth(): number {
+      return Number(
+        this.monthInput.options[this.monthInput.selectedIndex].value,
+      );
+    }
+
+    private setDayInputMax(month: number) {
+      if (month === 2) {
+        this.dayInput.max = 29;
+        return;
+      }
+
+      if (month % 2 === 0) {
+        this.dayInput.max = 30;
+      } else {
+        this.dayInput.max = 31;
+      }
+    }
+
+    private sendDate() {
+      const event = new CustomEvent("dateChanged", {
+        detail: {
+          day: this.dayInput.valueAsNumber,
+          month: this.getMonth(),
+        },
+      });
+
+      this.dispatchEvent(event);
+    }
+  }
+
+  customElements.define("date-selector", DateSelector);
+</script>

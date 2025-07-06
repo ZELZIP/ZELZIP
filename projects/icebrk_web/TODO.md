@@ -1,6 +1,6 @@
 # TODO (icebrk_web)
-
-- Cleanup TS
-- Change month to text options
-- Legal footer
-- Better placeholder of inquiry number, change length when v1+
+- Split Navbar and ThemeSwitch
+- Make footer pretty
+- Link to main page
+- Add GitHub link
+    - Little vertical bar like on the PicoCSS page

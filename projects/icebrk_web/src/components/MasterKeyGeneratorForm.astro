@@ -1,0 +1,147 @@
+---
+import PlatformSelector from "@components/PlatformSelector.astro";
+import DateSelector from "@components/DateSelector.astro";
+
+interface Props {
+  id: string;
+}
+
+const { id } = Astro.props;
+---
+
+<master-key-generator-form id={id}>
+  <form id="form">
+    <PlatformSelector id="platform-selector" />
+
+    <label>
+      Inquiry number:
+      <input
+        id="inquiry-number-input"
+        type="number"
+        placeholder="12345678"
+        min="0"
+        max="99999999"
+        required
+      />
+    </label>
+
+    <div id="date-selector-wrapper">
+      <DateSelector id="date-selector" />
+    </div>
+
+    <input type="submit" value="Generate master key" />
+  </form>
+</master-key-generator-form>
+
+<script>
+  import {
+    calculate_v0_master_key,
+    calculate_v1_master_key,
+    calculate_v2_master_key,
+    calculate_v3_master_key,
+  } from "@zel.zip/icebrk";
+  import { AlgorithmVersion } from "@types";
+
+  class MasterKeyGeneratorForm extends HTMLElement {
+    connectedCallback() {
+	    this.inquiryNumberInput = this.querySelector("#inquiry-number-input");
+	    this.dateSelectorWrapper = this.querySelector("#date-selector-wrapper");
+
+      const platformSelector = this.querySelector("#platform-selector");
+      const dateSelector = this.querySelector("#date-selector");
+      const form = this.querySelector("#form");
+
+      platformSelector.addEventListener(
+        "platformChanged",
+        (e) => (this.platform = e.detail),
+      );
+
+      platformSelector.addEventListener("versionChanged", (e) => {
+        this.versionChanged(e.detail);
+      });
+
+      dateSelector.addEventListener(
+        "dateChanged",
+        (e) => (this.date = e.detail),
+      );
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        let leadingZeroes = 5;
+        if (this.version === AlgorithmVersion.v3) {
+          leadingZeroes = 8;
+        }
+
+        let masterKey = null;
+        let failed = false;
+        try {
+          masterKey = this.calculateMasterKey()
+            .toString()
+            .padStart("0", leadingZeroes);
+        } catch (error) {
+          masterKey = error.toString();
+          failed = true;
+        }
+
+        const event = new CustomEvent("masterKeyChanged", {
+          detail: { masterKey, failed },
+        });
+
+        this.dispatchEvent(event);
+      });
+    }
+
+    calculateMasterKey(): number {
+      const inquiryNumber = this.inquiryNumberInput.valueAsNumber;
+
+      switch (this.version) {
+        case AlgorithmVersion.v0:
+          return calculate_v0_master_key(
+            this.platform,
+            inquiryNumber,
+            this.date.day,
+            this.date.month,
+          );
+
+        case AlgorithmVersion.v1:
+          return calculate_v1_master_key(
+            BigInt(inquiryNumber),
+            this.date.day,
+            this.date.month,
+          );
+
+        case AlgorithmVersion.v2:
+          return calculate_v2_master_key(
+            BigInt(this.platform),
+            inquiryNumber,
+            this.date.day,
+            this.date.month,
+          );
+
+        case AlgorithmVersion.v3:
+		      return calculate_v3_master_key(BigInt(inquiryNumber));
+      }
+    }
+
+    versionChanged(version: number) {
+	    this.version = version;
+
+	    if (version === 3) {
+		    this.dateSelectorWrapper.hidden = true;
+	    } else {
+		    this.dateSelectorWrapper.hidden = false;
+	    }
+
+      if (version > 0) {
+        this.inquiryNumberInput.max = "9999999999";
+        this.inquiryNumberInput.placeholder = "1234567891";
+      } else {
+        this.inquiryNumberInput.max = "99999999";
+        this.inquiryNumberInput.placeholder = "12345678";
+      }
+    }
+  }
+
+  customElements.define("master-key-generator-form", MasterKeyGeneratorForm);
+</script>

@@ -1,21 +1,21 @@
 {
-  "name": "icebrk-web",
-  "private": true,
-  "version": "0.0.0",
+  "name": "icebrk_web",
   "type": "module",
+  "version": "0.0.1",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
   },
   "dependencies": {
-    "icebrk": "file:../icebrk_wasm",
-    "@picocss/pico": "catalog:"
+    "@picocss/pico": "catalog:",
+    "@zel.zip/icebrk": "file:../icebrk_wasm",
+    "astro": "catalog:",
+    "sass": "catalog:",
+    "theme-toggles": "catalog:"
   },
   "devDependencies": {
-    "sass": "catalog:",
-    "typescript": "catalog:",
-    "vite": "catalog:",
     "vite-plugin-top-level-await": "catalog:",
     "vite-plugin-wasm": "catalog:"
   }

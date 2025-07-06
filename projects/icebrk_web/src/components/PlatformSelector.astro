@@ -1,0 +1,146 @@
+---
+import { AlgorithmVersion } from "@types";
+import { Platform } from "@zel.zip/icebrk";
+
+interface Props {
+  id: string;
+}
+
+const { id } = Astro.props;
+---
+
+<platform-selector id={id}>
+  <fieldset class="grid">
+    <label for="platform-input">
+      Platform:
+
+      <select aria-label="Select your platform..." id="platform-input" required>
+        <option selected disabled value="">Select your platform...</option>
+        <option value={Platform.Wii}>Nintendo Wii</option>
+        <option value={Platform.Dsi}>Nintendo DSi</option>
+        <option value={Platform.WiiU}>Nintendo Wii U</option>
+        <option value={Platform.The3ds}>Nintendo 3DS</option>
+        <option value={Platform.Switch}>Nintendo Switch</option>
+      </select>
+    </label>
+
+    <label for="platform-input">
+      Version:
+
+      <select aria-label="Select your version..." id="version-input" required>
+        <option selected disabled value="" id="select-platform-first-option">
+          Select a platform first...
+        </option>
+
+        <option value={AlgorithmVersion.v0} data-platform={Platform.Wii} hidden
+          >From 1.0 to 4.3</option
+        >
+
+        <option value={AlgorithmVersion.v0} data-platform={Platform.Dsi} hidden
+          >From 1.1 to 1.4.5</option
+        >
+
+        <option value={AlgorithmVersion.v0} data-platform={Platform.WiiU} hidden
+          >From 1.0 to 4.1.0</option
+        >
+        <option value={AlgorithmVersion.v2} data-platform={Platform.WiiU} hidden
+          >From 5.0.0 to 5.5.5</option
+        >
+
+        <option
+          value={AlgorithmVersion.v0}
+          data-platform={Platform.The3ds}
+          hidden>From 1.0 to 6.3.0</option
+        >
+        <option
+          value={AlgorithmVersion.v1}
+          data-platform={Platform.The3ds}
+          hidden>From 7.0.0 to 7.1.0</option
+        >
+        <option
+          value={AlgorithmVersion.v2}
+          data-platform={Platform.The3ds}
+          hidden>From 7.2.0 to 11.15.0</option
+        >
+
+        <option
+          value={AlgorithmVersion.v3}
+          data-platform={Platform.Switch}
+          hidden>From 1.0.0 to 7.0.1</option
+        >
+        <option
+          value={AlgorithmVersion.v4}
+          data-platform={Platform.Switch}
+          hidden>From 8.0.0 to 14.1.2</option
+        >
+      </select>
+    </label>
+  </fieldset>
+</platform-selector>
+
+<script>
+  class PlatformSelector extends HTMLElement {
+    connectedCallback() {
+      this.platformInput = this.querySelector("#platform-input");
+      this.versionInput = this.querySelector("#version-input");
+      this.selectPlatformFirstOption = this.querySelector(
+        "#select-platform-first-option",
+      );
+
+      this.platformInput.addEventListener(
+        "change",
+        this.onPlatformInputChange.bind(this),
+      );
+      this.versionInput.addEventListener(
+        "change",
+        this.onVersionInputChange.bind(this),
+      );
+    }
+
+    private onPlatformInputChange() {
+      this.selectPlatformFirstOption.textContent = "Select your version...";
+
+      const platform =
+        this.platformInput.options[this.platformInput.selectedIndex].value;
+
+      const currentOptions = this.querySelectorAll(
+        `[data-platform="${platform}"]`,
+      );
+
+      if (currentOptions.length === 1) {
+        this.selectPlatformFirstOption.selected = false;
+        currentOptions[0].selected = true;
+
+        // If there is only one option the user will not be able to trigger the event
+        this.onVersionInputChange();
+      } else {
+        this.selectPlatformFirstOption.selected = true;
+      }
+
+      currentOptions.forEach((option) => {
+        option.hidden = false;
+      });
+
+      this.querySelectorAll(
+        `[data-platform]:not([data-platform="${platform}"])`,
+      ).forEach((option) => {
+        option.hidden = true;
+        option.selected = false;
+      });
+
+      const event = new CustomEvent("platformChanged", { detail: platform });
+      this.dispatchEvent(event);
+    }
+
+    private onVersionInputChange() {
+      const version =
+        this.versionInput.options[this.versionInput.selectedIndex].value;
+      const event = new CustomEvent("versionChanged", {
+        detail: Number(version),
+      });
+      this.dispatchEvent(event);
+    }
+  }
+
+  customElements.define("platform-selector", PlatformSelector);
+</script>
