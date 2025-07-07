@@ -16,6 +16,7 @@
     "jiti": "catalog:",
     "prettier": "catalog:",
     "prettier-plugin-astro": "catalog:",
+    "typedoc": "catalog:",
     "typescript-eslint": "catalog:"
   }
 }

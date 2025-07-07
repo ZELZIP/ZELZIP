@@ -70,6 +70,7 @@
 
             ## Python
             ruff
+	    mypy
 
             # Apps
             ## Grepping inside multiple files

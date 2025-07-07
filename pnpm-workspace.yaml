@@ -1,9 +1,3 @@
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at https://mozilla.org/MPL/2.0/.
-#
-# SPDX-License-Identifier: MPL-2.0
-
 packages:
   - projects/**
 
@@ -13,12 +7,12 @@ catalog:
   vite: ^7.0.0
   vite-plugin-top-level-await: ^1.5.0
   vite-plugin-wasm: ^3.4.1
-  "@picocss/pico": ^2.1.1
+  '@picocss/pico': ^2.1.1
   sass: ^1.89.2
   astro: ^5.11.0
-  "@eslint/css": ^0.9.0
-  "@eslint/js": ^9.30.1
-  "@eslint/json": ^0.12.0
+  '@eslint/css': ^0.9.0
+  '@eslint/js': ^9.30.1
+  '@eslint/json': ^0.12.0
   eslint: 9.30.1
   globals: ^16.3.0
   typescript-eslint: 8.35.1
@@ -26,11 +20,12 @@ catalog:
   eslint-config-prettier: ^10.1.5
   eslint-config-flat-gitignore: ^2.1.0
   jiti: ^2.4.2
-  "@tsconfig/strictest": ^2.0.5
+  '@tsconfig/strictest': ^2.0.5
   eslint-plugin-astro: ^1.3.1
-  "@typescript-eslint/parser": ^8.35.1
+  '@typescript-eslint/parser': ^8.35.1
   prettier: ^3.6.2
   prettier-plugin-astro: ^0.14.1
   theme-toggles: ^4.10.1
+  typedoc: ^0.28.7
 
 linkWorkspacePackages: true

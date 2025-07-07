@@ -31,6 +31,7 @@ jobs:
         with:
           github_token: "${{ secrets.GITHUB_TOKEN }}"
 
+      - run: dev setup_pnpm
       - run: dev wasm --project icebrk
 
       - run: pnpm publish ./projects/icebrk_wasm --access public --no-git-checks

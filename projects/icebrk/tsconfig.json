@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.json",
+  "files": ["../icebrk_wasm/zelzip_icebrk.d.ts"],
+
+  "compilerOptions": {
+    "allowJs": true,
+    "declaration": true,
+    "emitDeclarationOnly": true
+  },
+
+  "typedocOptions": {
+    "entryPoints": ["../icebrk_wasm/zelzip_icebrk.d.ts"],
+    "out": "../icebrk_typedoc"
+  }
+}

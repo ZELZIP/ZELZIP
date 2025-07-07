@@ -1,4 +1,5 @@
 **/dirty/**/*
 projects/*_wasm/**/*
+projects/*_typedoc/**/*
 **/dist/**/*
 **/.astro/**/*

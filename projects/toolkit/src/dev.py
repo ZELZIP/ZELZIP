@@ -42,6 +42,30 @@ def setup_pnpm():
 
 
 @app.command()
+def typedoc(
+    projects: Annotated[
+        list[str] | None,
+        typer.Argument(
+            help="Optional set of space separated projects whose WASM TypeScript bindings documentation should be generated, if not specified defaults to compile all of them."
+        ),
+    ] = None,
+):
+    """
+    Generate WASM TypeScript bindings documentation.
+    """
+
+    projects_names = []
+
+    if projects is None:
+        projects_names = WASM_PROJECTS
+    else:
+        projects_names = projects
+
+    for project in projects_names:
+        pnpm["typedoc", "--tsconfig", f"{root_path}/projects/icebrk/tsconfig.json"] & FG
+
+
+@app.command()
 def wasm(
     projects: Annotated[
         list[str] | None,
@@ -51,7 +75,7 @@ def wasm(
     ] = None,
 ):
     """
-    Build all WASM projects.
+    Build WASM projects.
     """
 
     projects_names = []
