@@ -52,7 +52,6 @@ fn calculate_master_key_shared_v1_and_v2(
     // The month and day with a leading zero when the number is not two digits long
     // and the inquiry number (also padded with zeroes)
     let input = format!("{month:0>2}{day:0>2}{inquiry_number:0>10}");
-    println!("{input}");
 
     #[allow(clippy::expect_used)]
     let mut hmac = HmacSha256::new_from_slice(hmac_key).expect("Invalid lenght of the key");
@@ -63,8 +62,6 @@ fn calculate_master_key_shared_v1_and_v2(
     let hash: [u8; 4] = hmac.finalize().into_bytes()[0..4]
         .try_into()
         .expect("The HMAC hash is always long enough");
-
-    println!("{hash:?}");
 
     let output = if big_endian {
         u32::from_be_bytes(hash)

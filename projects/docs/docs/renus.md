@@ -1,3 +1,0 @@
-# ReNUS Rust library
-
-TODO!

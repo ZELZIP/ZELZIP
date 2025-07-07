@@ -1,3 +1,0 @@
-# The ViiENTO CLI
-
-TODO!

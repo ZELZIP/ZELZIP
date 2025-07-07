@@ -6,7 +6,8 @@
 
 import typer
 import glob
-import util
+from typing_extensions import Annotated
+from util import get_root_path
 from plumbum import colors, FG, local
 from plumbum.cmd import (
     rg,
@@ -24,23 +25,43 @@ from plumbum.cmd import (
 wasm_pack = local["wasm-pack"]
 wasm_opt = local["wasm-opt"]
 
-root_path = util.root_path()
-app = typer.Typer()
+root_path = get_root_path()
+app = typer.Typer(help="ZEL.ZIP internal monorepo toolkit")
 
 
 WASM_PROJECTS = ["icebrk"]
 
 
 @app.command()
-def wasm(project: list[str] = None):
-    projects = []
+def setup_pnpm():
+    """
+    Setup the monorepo PNPM dependencies.
+    """
 
-    if project is None:
-        projects = WASM_PROJECTS
+    pnpm["install"] & FG
+
+
+@app.command()
+def wasm(
+    projects: Annotated[
+        list[str] | None,
+        typer.Argument(
+            help="Optional set of space separated projects that their WASM variant should be compiled, if not specified defaults to compile all of them."
+        ),
+    ] = None,
+):
+    """
+    Build all WASM projects.
+    """
+
+    projects_names = []
+
+    if projects is None:
+        projects_names = WASM_PROJECTS
     else:
-        projects = project
+        projects_names = projects
 
-    for project in projects:
+    for project in projects_names:
         out_path = f"{root_path}/projects/{project}_wasm"
 
         wasm_pack[

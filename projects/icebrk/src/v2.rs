@@ -496,26 +496,18 @@ pub fn calculate_v2_master_key(
         _ => panic!("The v2 algorithm is only available on the 3DS and the Wii U platforms"),
     };
 
-    //println!("AES KEY: {aes_key:?}");
-
     #[allow(clippy::expect_used)]
     let aes_counter: &[u8; 16] = hmac_enc[16..32]
         .try_into()
         .expect("The encoded v2 HMAC file is not big enough");
-
-    //println!("AES COUNTER: {aes_counter:?}");
 
     #[allow(clippy::expect_used)]
     let mut hmac_key: [u8; 32] = hmac_enc[32..64]
         .try_into()
         .expect("The encoded v2 HMAC file is not big enough");
 
-    println!("HMAC KEY (ENC): {hmac_key:x?}");
-
     let mut aes = Aes128Ctr64LE::new(aes_key.into(), aes_counter.into());
     aes.apply_keystream(&mut hmac_key);
-
-    println!("HMAC KEY (DEC): {hmac_key:x?}");
 
     Ok(crate::calculate_master_key_shared_v1_and_v2(
         &hmac_key,

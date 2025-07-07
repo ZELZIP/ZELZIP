@@ -17,9 +17,7 @@ export default defineConfig({
           text: "Projects",
           items: [
             { text: "NiiEBLA library", link: "/niiebla/niiebla" },
-            { text: "ReNUS library", link: "/renus" },
-            { text: "Seto database", link: "/seto" },
-            { text: "ViiENTO CLI", link: "/viiento" },
+            { text: "Wiki", link: "/wiki/wiki" },
           ],
         },
       ],
@@ -31,6 +29,16 @@ export default defineConfig({
             { text: "Getting Started", link: "/niiebla/niiebla" },
             { text: "WAD/TAD files", link: "/niiebla/wad" },
             { text: "Title IDs", link: "/niiebla/title_ids" },
+          ],
+        },
+      ],
+
+      "/wiki/": [
+        {
+          text: "ZEL.ZIP Wiki",
+          items: [
+            { text: "About this wiki", link: "/wiki/wiki" },
+            { text: "Parental Control Master Key Generation Algorithms", link: "/wiki/parental-control-master-key-generation-algorithms" },
           ],
         },
       ],
