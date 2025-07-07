@@ -16,6 +16,7 @@ $ nix develop
 ```
 
 Setup the monorepo:
+
 ```sh
 $ dev setup
 ```
@@ -66,3 +67,7 @@ $ dev ignores
 This project is a fan-made homebrew creation developed independently and is not affiliated with, endorsed by, or associated with Nintendo Co., Ltd or any of its subsidiaries, affiliates, or partners. All trademarks and copyrights referenced are the property of their respective owners.
 
 All files presented here are under the [Mozilla Public License Version 2.0](./LICENSE.txt) otherwise noted.
+
+## Credits
+
+Every person that has contributed to ZEL.ZIP is credited on our [credits page](https://zelzip.net/credits).

@@ -38,7 +38,10 @@ export default defineConfig({
           text: "ZEL.ZIP Wiki",
           items: [
             { text: "About this wiki", link: "/wiki/wiki" },
-            { text: "Parental Control Master Key Generation Algorithms", link: "/wiki/parental-control-master-key-generation-algorithms" },
+            {
+              text: "Parental Control Master Key Generation Algorithms",
+              link: "/wiki/parental-control-master-key-generation-algorithms",
+            },
           ],
         },
       ],

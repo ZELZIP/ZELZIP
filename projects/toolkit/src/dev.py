@@ -20,6 +20,7 @@ from plumbum.cmd import (
     ruff,
     addlicense,
     jq,
+    jsonschema,
 )
 
 wasm_pack = local["wasm-pack"]
@@ -178,9 +179,25 @@ def check():
         "**/node_modules/**",
         "-ignore",
         "**/target/**",
+        "-ignore",
+        "**/*_wasm/**",
+        "-ignore",
+        "**/*_typedoc/**",
         "-check",
         root_path,
     ] & FG
+
+    print("Checking JSON schemas")
+    jsonschema["metaschema", f"{root_path}/projects/standards/json-schemas/", "--http"]
+
+    print("Checking contributors JSON files against schemas")
+    for name in glob.iglob("./credits/*.json", root_dir=root_path, recursive=True):
+        jsonschema[
+            "validate",
+            f"{root_path}/projects/standards/json-schemas/credits/contributor.1.0.schema.json",
+            f"{root_path}/{name}",
+            "--http",
+        ] & FG
 
     print()
     print(colors.green & colors.underline | ">>> Everything is ok! <<<")
@@ -247,10 +264,12 @@ def ignores():
     ]
 
     print("Reading .ignore files")
-    for path in glob.iglob("./ignores/*.ignore", root_dir=root_path, recursive=True):
+    for path in glob.iglob(
+        f"{root_path}/ignores/*.ignore", root_dir=root_path, recursive=True
+    ):
         print(f"  {path}")
 
-        with open(path, "r") as file:
+        with open(f"{path}", "r") as file:
             ignore_lines.append(f">>> FILE: {path} <<<")
             ignore_lines += file.readlines()
 

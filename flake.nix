@@ -67,10 +67,11 @@
             nodejs
             vscode-langservers-extracted
             nodePackages.prettier
+            source-meta-json-schema
 
             ## Python
             ruff
-	    mypy
+            mypy
 
             # Apps
             ## Grepping inside multiple files

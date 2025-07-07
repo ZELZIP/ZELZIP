@@ -1,0 +1,13 @@
+{
+  "$schema": "https://standards.zelzip.net/json-schemas/credits/contributor.1.0.schema.json",
+
+  "name": "Kutu",
+  "email": "jorge@dobon.dev",
+  "website": "https://dobon.dev",
+
+  "contributions": ["Lead developer of the project"],
+
+  "socialMedia": {
+    "github": "kutu-dev"
+  }
+}
