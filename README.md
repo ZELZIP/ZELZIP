@@ -1,13 +1,13 @@
-# ZEL.ZIP Monorepo
+# ZELZIP Monorepo
 
 > [!IMPORTANT]  
-> This document describes the development workflow of this repository, if you are searching for user-facing documentation please refer to the [ZEL.ZIP documentation](https://docs.zel.zip).
+> This document describes the development workflow of this repository, if you are searching for user-facing documentation please refer to the [ZELZIP documentation](https://docs.zelzip.dev).
 >
-> If you don't know what is ZEL.ZIP, feel free to visit [our main page](https://zel.zip).
+> If you don't know what is ZELZIP, feel free to visit [our main page](https://zelzip.dev).
 
 ## Getting Started
 
-This repository holds most of the code of the ZEL.ZIP project, its development workflow is based on the use of [Nix flake devShells](https://nixos.wiki/wiki/Development_environment_with_nix-shell#nix_develop) and a custom build terminal toolkit called `dev`.
+This repository holds most of the code of the ZELZIP project, its development workflow is based on the use of [Nix flake devShells](https://nixos.wiki/wiki/Development_environment_with_nix-shell#nix_develop) and a custom build terminal toolkit called `dev`.
 
 Enter the devShell:
 
@@ -70,4 +70,4 @@ All files presented here are under the [Mozilla Public License Version 2.0](./LI
 
 ## Credits
 
-Every person that has contributed to ZEL.ZIP is credited on our [credits page](https://zelzip.net/credits).
+Every person that has contributed to ZELZIP is credited on our [credits page](https://zelzip.net/credits).

@@ -1,6 +1,6 @@
 # ZEL.ZEL NiiEBLA
 
-[Usage guide](https://docs.zel.zip/niiebla/niiebla.html) | [Reference](https://docs.rs/zelzip_niiebla) | [ZEL.ZIP website](https://zel.zip)
+[Usage guide](https://docs.zelzip.dev/niiebla/niiebla.html) | [Reference](https://docs.rs/zelzip_niiebla) | [ZELZIP website](https://zelzip.dev)
 
 A parsing library for various Nintendo file formats. With accurate support for multiple niche entries and extensions (TikV1, Wii Savegame data, etc).
 
@@ -71,7 +71,7 @@ let mut new_tmd_file = File::open("/just/any/other/path").unwrap();
 tmd.dump(&mut new_tmd_file).unwrap();
 ```
 
-For more advanced use cases visit the [usage guide](https://docs.zel.zip/niiebla/niiebla.html)
+For more advanced use cases visit the [usage guide](https://docs.zelzip.dev/niiebla/niiebla.html)
 
 ## Legal notice
 

@@ -2,7 +2,7 @@
 
 On all Nintendo consoles with a parental control system (Wii, DSi, Wii U, 3DS, Switch, etc) in case the main key is forgotten there is a function called "master key" in which if the "inquiry number" displayed at the screen is sent to the Nintendo Support they will send you back a unique value to disable the restrictions of the system.
 
-This "master key" follows a set of algorithms depending of the device and version of it, multiple third party implementations exists at this time: `IceBrk` ([Rust](https://docs.rs/zelzip_icebrk) and [WASM](https://www.npmjs.com/package/@zel.zip/icebrk) library by the [ZEL.ZIP team](https://zel.zip/credits)) and [`mkey`](https://github.com/dazjo/mkey) (Python and C implementations by [Dazzozo](https://github.com/Dazzozo), [dazjo](https://github.com/dazjo), [neimod](https://github.com/neimod), WulfyStylez, Shiny Quagsire and [marcan](https://marcan.st/)).
+This "master key" follows a set of algorithms depending of the device and version of it, multiple third party implementations exists at this time: `IceBrk` ([Rust](https://docs.rs/zelzip_icebrk) and [WASM](https://www.npmjs.com/package/@zelzip.dev/icebrk) library by the [ZELZIP team](https://zelzip.dev/credits)) and [`mkey`](https://github.com/dazjo/mkey) (Python and C implementations by [Dazzozo](https://github.com/Dazzozo), [dazjo](https://github.com/dazjo), [neimod](https://github.com/neimod), WulfyStylez, Shiny Quagsire and [marcan](https://marcan.st/)).
 
 The master key always have a fixed length, in case the result value has fewer digits than it should be the value must be prefixed with the proper number of leading zeroes when displayed to the user.
 
@@ -39,7 +39,7 @@ Available on:
 
 ### Reference implementations
 
-- [ZEL.ZIP IceBrk (Rust)](https://github.com/ZELZIP/ZELZIP/blob/main/projects/icebrk/src/v0.rs).
+- [ZELZIP IceBrk (Rust)](https://github.com/ZELZIP/ZELZIP/blob/main/projects/icebrk/src/v0.rs).
 - mkey:
   - [Python](https://github.com/dazjo/mkey/blob/master/mkey.py#L212-L235).
   - [C](https://github.com/dazjo/mkey/blob/master/source/mkey.c#L211-L241).
@@ -67,7 +67,7 @@ Available on:
 
 ### Reference implementations
 
-- ZEL.ZIP IceBrk (Rust):
+- ZELZIP IceBrk (Rust):
   - [Version 1 only code section](https://github.com/ZELZIP/ZELZIP/blob/main/projects/icebrk/src/v1.rs).
   - [Version 1 and 2 shared code section](https://github.com/ZELZIP/ZELZIP/blob/main/projects/icebrk/src/icebrk.rs#L45-L76).
   - [Blobs](https://github.com/ZELZIP/ZELZIP/tree/main/projects/icebrk/src/v1).
@@ -116,7 +116,7 @@ Available on:
 
 ### Reference implementations
 
-- ZEL.ZIP IceBrk (Rust):
+- ZELZIP IceBrk (Rust):
   - [Version 2 only code section](https://github.com/ZELZIP/ZELZIP/blob/main/projects/icebrk/src/v2.rs).
   - [Version 1 and 2 shared code section](https://github.com/ZELZIP/ZELZIP/blob/main/projects/icebrk/src/icebrk.rs#L45-L76).
   - [Blobs](https://github.com/ZELZIP/ZELZIP/tree/main/projects/icebrk/src/v2).
@@ -148,7 +148,7 @@ Available on:
 
 ### Reference implementations
 
-- ZEL.ZIP IceBrk (Rust):
+- ZELZIP IceBrk (Rust):
   - [Code](https://github.com/ZELZIP/ZELZIP/blob/main/projects/icebrk/src/v3.rs).
   - [Blobs](https://github.com/ZELZIP/ZELZIP/tree/main/projects/icebrk/src/v3).
 - mkey (Nintendo Homebrew Server fork):

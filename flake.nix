@@ -67,7 +67,7 @@
             nodejs
             vscode-langservers-extracted
             nodePackages.prettier
-            source-meta-json-schema
+            jq
 
             ## Python
             ruff

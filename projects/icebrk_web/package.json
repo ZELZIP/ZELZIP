@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@picocss/pico": "catalog:",
-    "@zel.zip/icebrk": "file:../icebrk_wasm",
+    "@zelzip.dev/icebrk": "file:../icebrk_wasm",
     "astro": "catalog:",
     "sass": "catalog:",
     "theme-toggles": "catalog:"

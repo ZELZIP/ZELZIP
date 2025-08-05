@@ -2,13 +2,13 @@ import { defineConfig } from "vitepress";
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  title: "ZEL.ZIP",
-  description: "Shared documentation for all the ZEL.ZIP projects",
+  title: "ZELZIP",
+  description: "Shared documentation for all the ZELZIP projects",
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: "Home", link: "/" },
-      { text: "Visit the main page", link: "https://zel.zip" },
+      { text: "Visit the main page", link: "https://zelzip.dev" },
     ],
 
     sidebar: {
@@ -35,7 +35,7 @@ export default defineConfig({
 
       "/wiki/": [
         {
-          text: "ZEL.ZIP Wiki",
+          text: "ZELZIP Wiki",
           items: [
             { text: "About this wiki", link: "/wiki/wiki" },
             {

@@ -1,4 +1,4 @@
-# ZEL.ZIP Icebrk library
+# ZELZIP Icebrk library
 
 WASM implementation of the different algorithms used on Nintendo consoles to generate the parental control master key.
 
@@ -7,7 +7,7 @@ WASM implementation of the different algorithms used on Nintendo consoles to gen
 If you are using:
 
 - Rust, check the [crate documentation](https://docs.rs/zelzip_icebrk).
-- JavaScript or TypeScript, check the [typed NPM library documentation](https://wasm.icebrk.docs.zel.zip).
+- JavaScript or TypeScript, check the [typed NPM library documentation](https://wasm.icebrk.docs.zelzip.dev).
 
 ## Limitations
 

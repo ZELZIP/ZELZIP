@@ -1,4 +1,4 @@
-# The ZEL.ZIP Wiki
+# The ZELZIP Wiki
 
 Documentation about obscure and tangential systems made by Nintendo.
 

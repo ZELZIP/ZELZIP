@@ -14,11 +14,11 @@ lto = true
 [workspace.package]
 edition = "2024"
 
-authors = ["The ZEL.ZIP team <contact@zel.zip>"]
+authors = ["The ZELZIP team <contact@zelzip.dev>"]
 
 license = "MPL-2.0"
 
-homepage = "https://zel.zip"
+homepage = "https://zelzip.dev"
 repository = "https://github.com/ZELZIP/ZELZIP"
 
 [workspace.dependencies]
