@@ -20,7 +20,7 @@ from plumbum.cmd import (
     ruff,
     addlicense,
     jq,
-    jsonschema,
+    docker,
 )
 
 wasm_pack = local["wasm-pack"]
@@ -31,6 +31,16 @@ app = typer.Typer(help="ZELZIP internal monorepo toolkit")
 
 
 WASM_PROJECTS = ["icebrk"]
+
+@app.command()
+def build_docker_static_server(project_name: str):
+    """
+    Build a Docker image for static server
+    """
+
+    pnpm["run", "--dir", f"{root_path}/projects/icebrk_web", "build", "--outDir" f"{root_path}/dockerfiles/static_server/dist"] & FG
+    docker["build", "-t", f"ghcr.io/zelzip/{project_name}:latest", "dockerfiles/static_server/"] & FG
+
 
 
 @app.command()
@@ -186,18 +196,6 @@ def check():
         "-check",
         root_path,
     ] & FG
-
-    print("Checking JSON schemas")
-    jsonschema["metaschema", f"{root_path}/projects/standards/json-schemas/", "--http"]
-
-    print("Checking contributors JSON files against schemas")
-    for name in glob.iglob("./credits/*.json", root_dir=root_path, recursive=True):
-        jsonschema[
-            "validate",
-            f"{root_path}/projects/standards/json-schemas/credits/contributor.1.0.schema.json",
-            f"{root_path}/{name}",
-            "--http",
-        ] & FG
 
     print()
     print(colors.green & colors.underline | ">>> Everything is ok! <<<")

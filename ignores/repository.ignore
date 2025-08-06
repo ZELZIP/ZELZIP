@@ -3,3 +3,6 @@ projects/*_wasm/**/*
 projects/*_typedoc/**/*
 **/dist/**/*
 **/.astro/**/*
+
+dockefiles/**/*
+!dockefiles/*/Dockefile
