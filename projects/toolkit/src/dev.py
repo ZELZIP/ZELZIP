@@ -38,7 +38,7 @@ def build_docker_static_server(project_name: str):
     Build a Docker image for static server
     """
 
-    pnpm["run", "--dir", f"{root_path}/projects/icebrk_web", "build", "--outDir" f"{root_path}/dockerfiles/static_server/dist"] & FG
+    pnpm["run", "--dir", f"{root_path}/projects/icebrk_web", "build", "--outDir", f"{root_path}/dockerfiles/static_server/dist"] & FG
     docker["build", "-t", f"ghcr.io/zelzip/{project_name}:latest", "dockerfiles/static_server/"] & FG
 
 

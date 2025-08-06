@@ -21,7 +21,7 @@ on:
       - "publish/*.*.*/*"
 
 jobs:
-  publish-crates:
+  publish-docker:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' || contains(github.ref_name, 'icebrk_web')
 
