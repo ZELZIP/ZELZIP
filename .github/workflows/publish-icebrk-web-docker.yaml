@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: MPL-2.0
 
-name: "Publish updates of IceBrk web to the Docker container"
+name: "Publish updates of IceBrk Web to the Docker container"
 
 permissions:
   contents: read
@@ -37,6 +37,7 @@ jobs:
           github_access_token: "${{ secrets.GITHUB_TOKEN }}"
 
       - run: dev setup-pnpm
+      - run: dev wasm icebrk
       - run: dev build-docker-static-server icebrk_web
-      
+
       - run: docker push ghcr.io/zelzip/icebrk_web:latest
