@@ -32,7 +32,7 @@ jobs:
           github_token: "${{ secrets.GITHUB_TOKEN }}"
 
       - run: dev setup-pnpm
-      - run: dev wasm --project icebrk
+      - run: dev wasm
 
       - run: pnpm publish ./projects/icebrk_wasm --access public --no-git-checks
         env:
