@@ -40,7 +40,7 @@ wasm-bindgen-test = "0.3.34"
 hmac = "0.12.1"
 ctr = "0.9.2"
 derive_jserror = "0.1.0"
-util = { package = "zelzip_util", version = "2.0.0", path = "projects/util", features = [
+util = { package = "zelzip_util", version = "*", path = "projects/util", features = [
   "std",
 ] }
 
