@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: MPL-2.0
 
-name: "Publish updates of IceBrk Web to the Docker container"
+name: "Publish updates of IceBrk Web to the Docker container registry"
 
 permissions:
   contents: read
@@ -22,9 +22,9 @@ on:
       - "publish/*.*.*/*"
 
 jobs:
-  publish-docker:
+  publish-icebrk-web-docker:
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || contains(github.ref_name, 'icebrk_web')
+    if: github.event_name == 'workflow_dispatch' || contains(github.ref_name, 'icebrk-web')
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.2.2
@@ -39,6 +39,6 @@ jobs:
 
       - run: dev setup-pnpm
       - run: dev wasm icebrk
-      - run: dev build-docker-static-server icebrk_web
 
+      - run: dev build-docker-static-server icebrk_web
       - run: docker push ghcr.io/zelzip/icebrk_web:latest

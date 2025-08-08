@@ -544,7 +544,7 @@ checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 
 [[package]]
 name = "zelzip_icebrk"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "aes",
  "crc",
@@ -575,7 +575,7 @@ dependencies = [
 
 [[package]]
 name = "zelzip_util"
-version = "3.0.0"
+version = "4.0.0"
 dependencies = [
  "aes",
  "byteorder",

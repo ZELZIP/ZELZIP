@@ -7,7 +7,10 @@
  */
 
 /*
- * TODO(TRACK: https://github.com/vuejs/vitepress/issues/1037): Allow footer when the sidebar is displayed
+ * TODO(FIX): Allow footer when the sidebar is displayed
+ *            
+ *            Check:
+ *            - https://github.com/vuejs/vitepress/issues/1037
  */
 footer.VPFooter {
   /* eslint-disable-next-line css/no-important */

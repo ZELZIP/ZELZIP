@@ -53,4 +53,4 @@ Be aware that **WAD/TAD files have a different API**, and explanation on this ar
 
 ### Title IDs
 
-You may be also interested on information about the support of [Title IDs](./title_ids).
+You may be also interested on information about the support of [Title IDs](./title-ids).

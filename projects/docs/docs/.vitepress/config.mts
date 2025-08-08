@@ -16,8 +16,8 @@ export default defineConfig({
         {
           text: "Projects",
           items: [
-            { text: "NiiEBLA library", link: "/niiebla/niiebla" },
-            { text: "Wiki", link: "/wiki/wiki" },
+            { text: "NiiEBLA library", link: "/niiebla" },
+            { text: "Wiki", link: "/wiki" },
           ],
         },
       ],
@@ -26,9 +26,9 @@ export default defineConfig({
         {
           text: "The NiiEBLA library",
           items: [
-            { text: "Getting Started", link: "/niiebla/niiebla" },
+            { text: "Getting Started", link: "/niiebla" },
             { text: "WAD/TAD files", link: "/niiebla/wad" },
-            { text: "Title IDs", link: "/niiebla/title_ids" },
+            { text: "Title IDs", link: "/niiebla/title-ids" },
           ],
         },
       ],
@@ -37,7 +37,7 @@ export default defineConfig({
         {
           text: "ZELZIP Wiki",
           items: [
-            { text: "About this wiki", link: "/wiki/wiki" },
+            { text: "About this wiki", link: "/wiki" },
             {
               text: "Parental Control Master Key Generation Algorithms",
               link: "/wiki/parental-control-master-key-generation-algorithms",

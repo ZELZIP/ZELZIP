@@ -38,7 +38,7 @@ let decrypted_view = wad.decrypted_view(
 ).unwrap();
 ```
 
-### Writting
+### Writing
 
 To avoid store contents in-memory (as they can have an arbitrary size) the following builder can be used:
 

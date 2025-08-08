@@ -1,5 +1,5 @@
 [package]
-version = "1.0.3"
+version = "1.0.4"
 
 name = "zelzip_icebrk"
 description = 'Implementation of the different algorithms used on Nintendo consoles to generate the parental control master key.'

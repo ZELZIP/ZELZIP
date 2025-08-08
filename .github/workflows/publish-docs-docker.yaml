@@ -4,10 +4,11 @@
 #
 # SPDX-License-Identifier: MPL-2.0
 
-name: "Publish updates of the IceBrk library to NPM and TypeDoc"
+name: "Publish updates of the main documentation to the Docker container registry"
 
 permissions:
   contents: read
+  packages: write
 
 # If a new commit is pushed just ignore the current one in the process queue and skip to the newest one
 concurrency:
@@ -21,12 +22,13 @@ on:
       - "publish/*.*.*/*"
 
 jobs:
-  publish-icebrk:
+  publish-docs-docker:
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || contains(github.ref_name, 'icebrk')
+    if: github.event_name == 'workflow_dispatch' || contains(github.ref_name, 'docs')
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.2.2
+
       - uses: ./.github/actions/setup-nix
         with:
           github_token: "${{ secrets.GITHUB_TOKEN }}"
@@ -36,11 +38,6 @@ jobs:
           github_access_token: "${{ secrets.GITHUB_TOKEN }}"
 
       - run: dev setup-pnpm
-      - run: dev wasm icebrk
+      - run: dev build-docker-static-server docs
 
-      - run: pnpm publish ./projects/icebrk_wasm --access public --no-git-checks
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - run: dev build-docker-typedoc icebrk
-      - run: docker push ghcr.io/zelzip/icebrk_typedoc:latest
+      - run: docker push ghcr.io/zelzip/docs:latest

@@ -32,15 +32,48 @@ app = typer.Typer(help="ZELZIP internal monorepo toolkit")
 
 WASM_PROJECTS = ["icebrk"]
 
+
 @app.command()
 def build_docker_static_server(project_name: str):
     """
     Build a Docker image for static server
     """
 
-    pnpm["run", "--dir", f"{root_path}/projects/icebrk_web", "build", "--outDir", f"{root_path}/dockerfiles/static_server/dist"] & FG
-    docker["build", "-t", f"ghcr.io/zelzip/{project_name}:latest", "dockerfiles/static_server/"] & FG
+    pnpm[
+        "run",
+        "--dir",
+        f"{root_path}/projects/{project_name}",
+        "build",
+        "--outDir",
+        f"{root_path}/dockerfiles/static_server/dist",
+    ] & FG
+    docker[
+        "build",
+        "-t",
+        f"ghcr.io/zelzip/{project_name}:latest",
+        "dockerfiles/static_server/",
+    ] & FG
 
+
+@app.command()
+def build_docker_typedoc(project_name: str):
+    """
+    Build a Docker image for Typedoc static server
+    """
+
+    pnpm[
+        "typedoc",
+        "--tsconfig",
+        f"{root_path}/projects/{project_name}/tsconfig.json",
+        "--out",
+        f"{root_path}/dockerfiles/static_server/dist",
+    ] & FG
+    docker[
+        "build",
+        "-t",
+        f"ghcr.io/zelzip/{project_name}_typedoc:latest",
+        "dockerfiles/static_server/",
+    ] & FG
 
 
 @app.command()
@@ -50,30 +83,6 @@ def setup_pnpm():
     """
 
     pnpm["install"] & FG
-
-
-@app.command()
-def typedoc(
-    projects: Annotated[
-        list[str] | None,
-        typer.Argument(
-            help="Optional set of space separated projects whose WASM TypeScript bindings documentation should be generated, if not specified defaults to compile all of them."
-        ),
-    ] = None,
-):
-    """
-    Generate WASM TypeScript bindings documentation.
-    """
-
-    projects_names = []
-
-    if projects is None:
-        projects_names = WASM_PROJECTS
-    else:
-        projects_names = projects
-
-    for project in projects_names:
-        pnpm["typedoc", "--tsconfig", f"{root_path}/projects/icebrk/tsconfig.json"] & FG
 
 
 @app.command()
