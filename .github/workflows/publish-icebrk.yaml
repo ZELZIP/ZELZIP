@@ -8,6 +8,7 @@ name: "Publish updates of the IceBrk library to NPM and TypeDoc"
 
 permissions:
   contents: read
+  packages: write
 
 # If a new commit is pushed just ignore the current one in the process queue and skip to the newest one
 concurrency:
