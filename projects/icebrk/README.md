@@ -7,7 +7,7 @@ WASM implementation of the different algorithms used on Nintendo consoles to gen
 If you are using:
 
 - Rust, check the [crate documentation](https://docs.rs/zelzip_icebrk).
-- JavaScript or TypeScript, check the [typed NPM library documentation](https://wasm.icebrk.docs.zelzip.dev).
+- JavaScript or TypeScript, check the [TypeScript library documentation](https://typedoc.icebrk.zelzip.dev) and the [NPM package](https://www.npmjs.com/package/@zelzip/icebrk).
 
 ## Limitations
 
